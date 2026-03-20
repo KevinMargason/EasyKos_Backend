@@ -5,9 +5,14 @@ use App\Http\Controllers\Api\FasilitasController;
 use App\Http\Controllers\Api\RoomsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\KosController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\VoucherController;
 
 // Rute untuk Manajemen Kos
 Route::apiResource('kos', KosController::class);
 Route::apiResource('rooms', RoomsController::class);
 Route::apiResource('fasilitas', FasilitasController::class);
 Route::apiResource('aturan', AturanController::class);
+Route::apiResource('payments', PaymentController::class);
+Route::apiResource('vouchers', VoucherController::class);
+Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
