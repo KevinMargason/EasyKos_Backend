@@ -348,6 +348,24 @@
             border-radius: 100px;
         }
 
+        .card-gif-wrap {
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0.25rem 0 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .card-gif {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            filter: grayscale(15%);
+            transition: filter 0.4s ease;
+        }
+
+        .card-gif:hover { filter: grayscale(0%); }
+
         .bar-1 { width: 72%; background: linear-gradient(90deg, var(--terracotta), var(--gold)); }
         .bar-2 { width: 45%; background: var(--terracotta-light); border: 1px solid var(--border); }
         .bar-3 { width: 88%; background: linear-gradient(90deg, var(--terracotta), var(--gold)); opacity: 0.4; }
@@ -517,6 +535,12 @@
                 <div class="error-code-display">
                     <div class="error-num">404</div>
                     <p class="error-sub">Halaman tidak dapat ditemukan</p>
+                </div>
+
+                <div class="card-gif-wrap">
+                    <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2dpdXl6MDZhMHhzandjamwyMzV0Z2h3aWJ1Y2lpbnZ0djZ6NTlsNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eVuh33eNQFzfAEM9gS/giphy.gif"
+                         alt="Lost illustration"
+                         class="card-gif">
                 </div>
 
                 <div class="card-footer">
