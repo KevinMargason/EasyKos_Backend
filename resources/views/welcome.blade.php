@@ -19,53 +19,53 @@
             </style>
         @endif
     </head>
-    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col">
-        <header class="w-full lg:max-w-4xl max-w-[335px] text-sm mb-6 not-has-[nav]:hidden">
-            @if (Route::has('login'))
-                <nav class="flex items-center justify-end gap-4">
-                    @auth
-                        <a
-                            href="{{ url('/dashboard') }}"
-                            class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] border-[#19140035] hover:border-[#1915014a] border text-[#1b1b18] dark:border-[#3E3E3A] dark:hover:border-[#62605b] rounded-sm text-sm leading-normal"
-                        >
-                            Dashboard
-                        </a>
-                    @else
-                        <a
-                            href="{{ route('login') }}"
-                            class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] text-[#1b1b18] border border-transparent hover:border-[#19140035] dark:hover:border-[#3E3E3A] rounded-sm text-sm leading-normal"
-                        >
-                            Log in
-                        </a>
-
-                        @if (Route::has('register'))
-                            <a
-                                href="{{ route('register') }}"
-                                class="inline-block px-5 py-1.5 dark:text-[#EDEDEC] border-[#19140035] hover:border-[#1915014a] border text-[#1b1b18] dark:border-[#3E3E3A] dark:hover:border-[#62605b] rounded-sm text-sm leading-normal">
-                                Register
-                            </a>
-                        @endif
-                    @endauth
-                </nav>
-            @endif
+    <body class="bg-[#FDFDFC] dark:bg-[#0a0a0a] text-[#1b1b18] flex p-6 lg:p-8 items-center justify-center min-h-screen flex-col font-sans">
+    
+    @if (Route::has('login'))
+        <header class="w-full lg:max-w-4xl max-w-[335px] text-sm mb-8">
+            <nav class="flex items-center justify-end gap-4">
+                @auth
+                    <a href="{{ url('/dashboard') }}" class="px-5 py-2 transition-all border border-[#19140035] dark:border-[#3E3E3A] hover:bg-[#1b1b18] hover:text-white dark:hover:bg-white dark:hover:text-black rounded-lg">Dashboard</a>
+                @else
+                    <a href="{{ route('login') }}" class="px-5 py-2 opacity-70 hover:opacity-100 transition-opacity">Log in</a>
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="px-5 py-2 border border-[#19140035] dark:border-[#3E3E3A] hover:border-black dark:hover:border-white rounded-lg transition-all">Register</a>
+                    @endif
+                @endauth
+            </nav>
         </header>
-        <div class="flex items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow starting:opacity-0">
-            <main class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row">
-                <div class="text-[13px] leading-[20px] flex-1 p-6 pb-12 lg:p-20 bg-white dark:bg-[#161615] dark:text-[#EDEDEC] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d] rounded-bl-lg rounded-br-lg lg:rounded-tl-lg lg:rounded-br-none">
-                    <h1 class="mb-1 font-big" style="font-size: 24px; line-height: 1.2;">Yahhhhhh anda sedang tersesat. Balik aja gak sih ???</h1>
-                            <a href="https://easykos.vercel.app" target="_blank" class="inline-block dark:bg-[#eeeeec] dark:border-[#eeeeec] dark:text-[#1C1C1A] dark:hover:bg-white dark:hover:border-white hover:bg-black hover:border-black px-5 py-1.5 bg-[#1b1b18] rounded-sm border border-black text-white text-sm leading-normal">
-                                Balik
-                            </a>
-                    <h1 style="color:white">HIDUP JOKOWI</h1>
-                </div>
-                <div class="bg-[#fff2f2] dark:bg-[#1D0002] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/376] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
-                    <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2dpdXl6MDZhMHhzandjamwyMzV0Z2h3aWJ1Y2lpbnZ0djZ6NTlsNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eVuh33eNQFzfAEM9gS/giphy.gif" >
-                </div>
-            </main>
+    @endif
+
+    <main class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-5xl lg:flex-row shadow-2xl rounded-2xl overflow-hidden transition-all duration-700 starting:opacity-0 starting:translate-y-4">
+        
+        <div class="flex-1 p-8 lg:p-16 bg-white dark:bg-[#161615] dark:text-[#EDEDEC] flex flex-col justify-center items-start border-r dark:border-[#3E3E3A]">
+            <span class="text-red-500 font-semibold tracking-widest uppercase text-xs mb-4">404 Error</span>
+            <h1 class="mb-6 font-bold text-3xl lg:text-4xl leading-tight text-[#1b1b18] dark:text-white">
+                Yahhhhhh... <br>anda sedang tersesat.
+            </h1>
+            <p class="text-[#706f6c] dark:text-[#A1A09A] mb-8 text-base lg:text-lg">
+                Sepertinya halaman yang kamu cari nggak ada di sini. Balik ke jalan yang benar yuk?
+            </p>
+            
+            <a href="https://easykos.vercel.app" class="group flex items-center gap-2 px-8 py-3 bg-[#1b1b18] dark:bg-[#eeeeec] text-white dark:text-[#1C1C1A] rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg">
+                <span>Balik Sekarang</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </a>
         </div>
 
-        @if (Route::has('login'))
-            <div class="h-14.5 hidden lg:block"></div>
-        @endif
-    </body>
+        <div class="bg-[#fff2f2] dark:bg-[#1D0002] flex items-center justify-center lg:w-[450px] shrink-0">
+            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2dpdXl6MDZhMHhzandjamwyMzV0Z2h3aWJ1Y2lpbnZ0djZ6NTlsNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/eVuh33eNQFzfAEM9gS/giphy.gif" 
+                 class="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-500" 
+                 alt="Lost illustration">
+        </div>
+
+    </main>
+
+    <div class="mt-12 text-[#706f6c] text-xs opacity-50">
+        &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+    </div>
+
+</body>
 </html>
