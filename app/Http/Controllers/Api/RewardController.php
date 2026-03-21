@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EasyKoin;
 use App\Models\RewardRedemption;
+use App\Models\RewardRedemptions;
 use App\Models\UsersVoucher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,7 @@ class RewardController extends Controller
                 'debit'
             );
 
-            $redemption = RewardRedemption::create([
+            $redemption = RewardRedemptions::create([
                 'users_id'          => $request->users_id,
                 'voucher_id'        => $request->voucher_id,
                 'tanggal_tukar'     => Carbon::now(),
