@@ -99,30 +99,37 @@ class MyTupaiController extends Controller
         }
 
         $laparSebelum = $tupai->level_lapar;
-
         $tupai->level_lapar += 30;
         $tupai->xp += 10;
-
         if ($tupai->level_lapar > 100) $tupai->level_lapar = 100;
 
         if ($tupai->xp >= 100) {
             $tupai->level += 1;
             $tupai->xp = 0;
+
+            CoinController::updateCoin(
+                $tupai->users_id,
+                $tupai->level * 20,
+                'level_up',
+                'Bonus naik level Tupai ke level ' . $tupai->level
+            );
         }
 
         $tupai->terakhir_makan = Carbon::now();
         $tupai->status = 'happy';
         $tupai->save();
 
+        $this->updateMissionProgress($tupai->users_id, 'feed');
+
         \App\Models\TupaiHistori::create([
-            'myTupai_id'      => $tupai->id,
-            'aktivitas_tipe'  => 'feed',
+            'myTupai_id' => $tupai->id,
+            'aktivitas_tipe' => 'feed',
             'aktivitas_waktu' => Carbon::now(),
-            'lapar_sebelum'   => $laparSebelum,
-            'lapar_setelah'   => $tupai->level_lapar,
-            'energi_sebelum'  => $tupai->level_stamina,
-            'energi_setelah'  => $tupai->level_stamina,
-            'notes'           => 'Tupai diberi makan, nyam nyam!'
+            'lapar_sebelum' => $laparSebelum,
+            'lapar_setelah' => $tupai->level_lapar,
+            'energi_sebelum' => $tupai->level_stamina,
+            'energi_setelah' => $tupai->level_stamina,
+            'notes' => 'Tupai diberi makan, nyam nyam!'
         ]);
 
         return response()->json(['success' => true, 'message' => 'Tupai berhasil diberi makan!', 'data' => $tupai], 200);
@@ -136,29 +143,50 @@ class MyTupaiController extends Controller
         $tupai = $this->hitungStatusTerkini($tupai);
 
         if ($tupai->status === 'sleeping') {
-            return response()->json(['success' => false, 'message' => 'Tupai sedang tidur lelap!'], 400);
+            return response()->json(['success' => false, 'message' => 'Tupai lagi tidur!'], 400);
         }
 
         $energiSebelum = $tupai->level_stamina;
-
         $tupai->level_stamina = 100;
         $tupai->status = 'sleeping';
         $tupai->terakhir_tidur = Carbon::now();
         $tupai->tidur_sampai = Carbon::now()->addHours(8);
         $tupai->save();
 
+        $this->updateMissionProgress($tupai->users_id, 'sleep');
+
         \App\Models\TupaiHistori::create([
-            'myTupai_id'      => $tupai->id,
-            'aktivitas_tipe'  => 'sleep',
+            'myTupai_id' => $tupai->id,
+            'aktivitas_tipe' => 'sleep',
             'aktivitas_waktu' => Carbon::now(),
-            'lapar_sebelum'   => $tupai->level_lapar,
-            'lapar_setelah'   => $tupai->level_lapar,
-            'energi_sebelum'  => $energiSebelum,
-            'energi_setelah'  => $tupai->level_stamina,
-            'notes'           => 'Tupai pergi tidur zzz...'
+            'lapar_sebelum' => $tupai->level_lapar,
+            'lapar_setelah' => $tupai->level_lapar,
+            'energi_sebelum' => $energiSebelum,
+            'energi_setelah' => $tupai->level_stamina,
+            'notes' => 'Tupai pergi tidur zzz...'
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Tupai sekarang sedang tidur!', 'data' => $tupai], 200);
+        return response()->json(['success' => true, 'message' => 'Tupai lagi menikmati kasur!', 'data' => $tupai], 200);
+    }
+
+    private function updateMissionProgress($userId, $jenisMisi)
+    {
+        $misiUser = \App\Models\UMisi::where('users_id', $userId)
+            ->where('status', 'in_progress')
+            ->whereHas('mission', function ($query) use ($jenisMisi) {
+                $query->where('jenis', $jenisMisi);
+            })
+            ->first();
+
+        if ($misiUser) {
+            $misiUser->progress_level += 1;
+
+            if ($misiUser->progress_level >= 3) {
+                $misiUser->status = 'completed';
+                $misiUser->completed_at = Carbon::now();
+            }
+            $misiUser->save();
+        }
     }
 
     /**

@@ -61,6 +61,15 @@ class DailyLoginController extends Controller
             'users_id'        => $userId
         ]);
 
+        CoinController::updateCoin(
+            $userId,
+            $koinDidapat,
+            'daily_login',
+            'Hadiah Login Harian hari ke-' . $streak->streak_sekarang,
+            'credit',
+            $log->id
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Daily login berhasil diklaim!',
