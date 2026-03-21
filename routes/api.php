@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AturanController;
+use App\Http\Controllers\Api\DailyLoginController;
 use App\Http\Controllers\Api\FasilitasController;
 use App\Http\Controllers\Api\RoomsController;
 use Illuminate\Support\Facades\Route;
@@ -22,3 +23,8 @@ Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
 
 // Rute untuk Manajemen MyTupai
 Route::apiResource('mytupai', MyTupaiController::class);
+Route::post('mytupai/{id}/feed', [MyTupaiController::class, 'feed']);
+Route::post('mytupai/{id}/sleep', [MyTupaiController::class, 'sleep']);
+
+// Rute untuk Daily Login dan Streak Bonus
+Route::post('daily-login/claim', [DailyLoginController::class, 'claimLogin']);
