@@ -24,7 +24,7 @@ class User extends Authenticatable
         'password',
         'no_hp',
         'role',
-        'monthly_subs' => 0,
+        'monthly_subs',
     ];
 
     /**
