@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AturanController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CoinController;
 use App\Http\Controllers\Api\DailyLoginController;
 use App\Http\Controllers\Api\FasilitasController;
@@ -37,3 +38,7 @@ Route::post('missions/claim', [MisiController::class, 'claimReward']);
 // Rute untuk Manajemen Koin
 Route::get('wallet/balance/{userId}', [CoinController::class, 'getBalance']);
 Route::post('rewards/redeem', [RewardController::class, 'redeem']);
+
+// Rute untuk Autentikasi
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
