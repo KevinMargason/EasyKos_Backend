@@ -15,8 +15,10 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'no_hp' => 'required|string|min:10|max:20|unique:users,no_hp',
             'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:owner,tenant,admin',
         ]);
 
         if ($validator->fails()) {
@@ -26,7 +28,9 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'pin' => Hash::make($request->password),
+            'no_hp' => $request->no_hp,
+            'role' => $request->role,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
