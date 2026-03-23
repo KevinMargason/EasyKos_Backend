@@ -2,7 +2,7 @@
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
-    'allowed_origins' => ['https://easykosbackend-production.up.railway.app/'], // Port Next.js kamu
+    'allowed_origins' => ['http://easykos.vercel.app'], // Port Next.js kamu
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
