@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\KosController;
 use App\Http\Controllers\Api\MisiController;
 use App\Http\Controllers\Api\MyTupaiController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PMController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\VoucherController;
 
@@ -42,3 +44,19 @@ Route::post('rewards/redeem', [RewardController::class, 'redeem']);
 // Rute untuk Autentikasi
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Rute untuk Profil Pengguna
+Route::get('/profile', [ProfileController::class, 'show']);
+Route::put('/profile', [ProfileController::class, 'update']);
+Route::put('/users/profile', [ProfileController::class, 'update']);
+
+// Rute untuk Manajemen Metode Pembayaran
+Route::get('/payment-methods', [PMController::class, 'index']);
+Route::post('/payment-methods', [PMController::class, 'store']);
+Route::put('/payment-methods/{id}', [PMController::class, 'update']);
+Route::delete('/payment-methods/{id}', [PMController::class, 'destroy']);
+
+// Rute untuk Manajemen Aturan Kos
+Route::get('/kos/current', [KosController::class, 'currentKos']);
+Route::get('/residents', [KosController::class, 'allResidents']);
+Route::get('/kos/{kosId}/residents', [KosController::class, 'kosResidents']);

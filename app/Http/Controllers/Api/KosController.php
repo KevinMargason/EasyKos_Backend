@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Kos;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KosController extends Controller
 {
@@ -73,5 +74,57 @@ class KosController extends Controller
 
         $kos->delete();
         return response()->json(['success' => true, 'message' => 'Kos berhasil dihapus'], 200);
+    }
+
+    public function currentKos(Request $request)
+    {
+        $user = $request->user();
+
+        $room = DB::table('rooms')->where('users_id', $user->id)->first();
+
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kamu belum menyewa kamar kos apapun.'
+            ], 404);
+        }
+
+        $kos = DB::table('kos')->where('id', $room->kos_id)->first();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $kos
+        ], 200);
+    }
+
+    public function allResidents()
+    {
+        $residents = DB::table('users')
+            ->select('id', 'name', 'email', 'no_hp', 'role')
+            ->where('role', 'tenant')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $residents
+        ], 200);
+    }
+
+    public function kosResidents($kosId)
+    {
+        $userIds = DB::table('rooms')
+            ->where('kos_id', $kosId)
+            ->pluck('users_id');
+
+        // Ambil data profil mereka
+        $residents = DB::table('users')
+            ->select('id', 'name', 'email', 'no_hp', 'role')
+            ->whereIn('id', $userIds)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $residents
+        ], 200);
     }
 }
