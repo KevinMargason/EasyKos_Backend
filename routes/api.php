@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AturanController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CoinController;
 use App\Http\Controllers\Api\DailyLoginController;
 use App\Http\Controllers\Api\FasilitasController;
@@ -60,3 +61,9 @@ Route::delete('/payment-methods/{id}', [PMController::class, 'destroy']);
 Route::get('/kos/current', [KosController::class, 'currentKos']);
 Route::get('/residents', [KosController::class, 'allResidents']);
 Route::get('/kos/{kosId}/residents', [KosController::class, 'kosResidents']);
+
+// Rute untuk Chat
+Route::get('/chats', [ChatController::class, 'index']);
+Route::get('/chats/{threadId}', [ChatController::class, 'show']);
+Route::get('/chats/{threadId}/messages', [ChatController::class, 'messages']);
+Route::post('/messages', [ChatController::class, 'sendMessage']);
