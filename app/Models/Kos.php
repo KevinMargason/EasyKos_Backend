@@ -15,7 +15,10 @@ class Kos extends Model
         'gender',
         'foto',
         'rating',
-        'region_idregion'
+        'region_idregion',
+        'user_id',
+        'peraturan',
+        'fasilitas_umum',
     ];
 
     public function rooms()

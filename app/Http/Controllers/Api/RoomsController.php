@@ -25,16 +25,35 @@ class RoomsController extends Controller
     {
         //
         $request->validate([
-            'kos_id'       => 'required|integer',
-            'harga'        => 'required|integer',
-            'nomor_kamar'  => 'required|string|max:45',
-            'ukuran_kamar' => 'required|string|max:45',
-            'listrik'      => 'required|in:token,pasca_bayar,tidak_ada',
-            'users_id'     => 'required|integer'
+            'kos_id'          => 'required|integer',
+            'harga'           => 'required|integer',
+            'nomor_kamar'     => 'required|string|max:45',
+            'ukuran_kamar'    => 'required|string|max:45',
+            'listrik'         => 'required|in:token,pasca_bayar,tidak_ada',
+            'users_id'        => 'required|integer',
+            'fasilitas_kamar' => 'nullable|array',
+            'foto'            => 'nullable|array',
+            'foto.*'          => 'image|mimes:jpeg,png,jpg|max:5120'
         ]);
 
-        $room = Rooms::create($request->all());
-        return response()->json(['success' => true, 'message' => 'Kamar berhasil ditambahkan', 'data' => $room], 201);
+        $data = $request->except(['foto']);
+
+        if ($request->has('fasilitas_kamar')) {
+            $data['fasilitas_kamar'] = json_encode($request->fasilitas_kamar);
+        }
+
+        if ($request->hasFile('foto')) {
+            $fotoPaths = [];
+            foreach ($request->file('foto') as $file) {
+                $path = $file->store('rooms', 'public');
+                $fotoPaths[] = $path;
+            }
+            $data['foto'] = json_encode($fotoPaths);
+        }
+
+        $room = Rooms::create($data);
+
+        return response()->json(['success' => true, 'message' => 'Kamar & Foto berhasil ditambahkan!', 'data' => $room], 201);
     }
 
     /**
