@@ -32,10 +32,23 @@ class KosController extends Controller
             'jumlah_kamar'    => 'required|integer',
             'gender'          => 'required|string',
             'rating'          => 'nullable|numeric',
-            'region_idregion' => 'required|integer'
+            'region_idregion' => 'required|integer',
+            'peraturan'       => 'nullable|string',
+            'fasilitas_umum'  => 'nullable|array',
         ]);
 
-        $kos = Kos::create($request->all());
+        $data = $request->all();
+
+        if ($request->user()) {
+            $data['users_id'] = $request->user()->id;
+        }
+
+        if ($request->has('fasilitas_umum')) {
+            $data['fasilitas_umum'] = json_encode($request->fasilitas_umum);
+        }
+
+        $kos = Kos::create($data);
+
         return response()->json(['success' => true, 'message' => 'Kos berhasil ditambahkan', 'data' => $kos], 201);
     }
 
