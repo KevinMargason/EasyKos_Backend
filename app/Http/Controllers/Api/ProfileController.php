@@ -45,9 +45,16 @@ class ProfileController extends Controller
         //
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak! Token Sanctum tidak terbaca oleh Laravel.'
+            ], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'name'     => 'sometimes|required|string|max:255',
-            'no_hp'    => 'sometimes|required|string|min:10|max:20|unique:users,no_hp,' . $user->id,
+            'no_hp'    => 'sometimes|required|string|min:10|max:13|unique:users,no_hp,' . $user->id,
             'password' => 'sometimes|nullable|string|min:8',
         ]);
 
