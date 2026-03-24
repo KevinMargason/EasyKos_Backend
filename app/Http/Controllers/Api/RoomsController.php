@@ -48,6 +48,12 @@ class RoomsController extends Controller
         return response()->json(['success' => true, 'data' => $room], 200);
     }
 
+    public function getRoomsByKos($kosId)
+    {
+        $rooms = Rooms::where('kos_id', $kosId)->with('kos')->get();
+        return response()->json(['success' => true, 'data' => $rooms], 200);
+    }
+
     /**
      * Update the specified resource in storage.
      */

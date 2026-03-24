@@ -61,6 +61,7 @@ Route::post('/login', [AuthController::class, 'login']);
     Route::get('/kos/current', [KosController::class, 'currentKos']);
     Route::get('/residents', [KosController::class, 'allResidents']);
     Route::get('/kos/{kosId}/residents', [KosController::class, 'kosResidents']);
+    Route::get('/kos/{kosId}/rooms', [RoomsController::class, 'getRoomsByKos']);
 
     // Rute untuk Chat
     Route::get('/chats', [ChatController::class, 'index']);
