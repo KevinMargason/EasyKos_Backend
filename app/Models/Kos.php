@@ -35,6 +35,7 @@ class Kos extends Model
 
     public function owner()
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->hasOneThrough(User::class, Rooms::class, 'kos_id', 'id', 'id', 'users_id')
+            ->where('users.role', 'owner');
     }
 }
