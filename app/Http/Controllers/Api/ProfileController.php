@@ -56,7 +56,7 @@ class ProfileController extends Controller
         }
 
         if ($request->has('name')) {
-            $user->nama = $request->name;
+            $user->name = $request->name;
         }
         if ($request->has('no_hp')) {
             $user->no_hp = $request->no_hp;
