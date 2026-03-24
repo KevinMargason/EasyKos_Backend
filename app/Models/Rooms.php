@@ -14,7 +14,9 @@ class Rooms extends Model
         'nomor_kamar',
         'ukuran_kamar',
         'listrik',
-        'users_id'
+        'users_id',
+        'fasilitas_kamar',
+        'foto'
     ];
 
     public function kos()
