@@ -44,7 +44,7 @@ class KosController extends Controller
     public function show(string $id)
     {
         //
-        $kos = Kos::find($id);
+        $kos = Kos::with(['aturans', 'fasilitas'])->find($id);
         if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
 
         return response()->json(['success' => true, 'data' => $kos], 200);

@@ -22,4 +22,14 @@ class Kos extends Model
     {
         return $this->hasMany(Rooms::class, 'kos_id', 'id');
     }
+
+    public function aturans()
+    {
+        return $this->belongsToMany(Aturan::class, 'kos_aturan', 'kos_id', 'aturan_id');
+    }
+
+    public function fasilitas()
+    {
+        return $this->belongsToMany(Fasilitas::class, 'kos_fasilitas', 'kos_id', 'fasilitas_id');
+    }
 }
