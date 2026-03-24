@@ -40,7 +40,7 @@ class ProfileController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request)
     {
         //
         $user = $request->user();
@@ -56,7 +56,7 @@ class ProfileController extends Controller
         }
 
         if ($request->has('name')) {
-            $user->name = $request->name;
+            $user->nama = $request->name;
         }
         if ($request->has('no_hp')) {
             $user->no_hp = $request->no_hp;
