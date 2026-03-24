@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kos;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -44,8 +45,13 @@ class KosController extends Controller
     public function show(string $id)
     {
         //
-        $kos = Kos::with(['aturans', 'fasilitas'])->find($id);
+        $kos = Kos::with(['aturans', 'fasilitas', 'owner'])->find($id);
         if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+
+        // fallback: if owner relation is absent (owner_id not set), attempt to find via users table with role owner
+        if (!$kos->owner && isset($kos->owner_id) && $kos->owner_id) {
+            $kos->owner = User::find($kos->owner_id);
+        }
 
         return response()->json(['success' => true, 'data' => $kos], 200);
     }
