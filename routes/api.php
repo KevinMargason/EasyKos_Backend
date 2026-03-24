@@ -21,7 +21,6 @@ use App\Http\Controllers\Api\VoucherController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
     // Rute untuk Manajemen Kos
     Route::apiResource('kos', KosController::class);
     Route::apiResource('rooms', RoomsController::class);
@@ -68,4 +67,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chats/{threadId}', [ChatController::class, 'show']);
     Route::get('/chats/{threadId}/messages', [ChatController::class, 'messages']);
     Route::post('/messages', [ChatController::class, 'sendMessage']);
-});
