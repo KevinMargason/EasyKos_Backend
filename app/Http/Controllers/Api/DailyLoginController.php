@@ -16,7 +16,11 @@ class DailyLoginController extends Controller
 
     public function claimLogin(Request $request)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
+
+        if (!$userId && $request->user()) {
+            $userId = $request->user()->id;
+        }
 
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'User tidak valid.'], 401);
