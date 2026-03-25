@@ -86,35 +86,34 @@ class MyTupaiController extends Controller
         return response()->json(['success' => true, 'data' => $tupai], 200);
     }
 
-    private function hitungStatusTerkini($tupai)
-    {
-        $sekarang = Carbon::now();
+   private function hitungStatusTerkini($tupai)
+{
+    $sekarang = Carbon::now();
 
-        $jamSejakMakan = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_makan));
-        $jamSejakTidur = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_tidur));
+    $jamSejakMakan = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_makan));
+    $jamSejakTidur = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_tidur));
 
-        $tupai->level_lapar -= ($jamSejakMakan * 2);
-        $tupai->level_stamina -= ($jamSejakTidur * 3);
+    // Force the calculation result to be an integer
+    $tupai->level_lapar = (int) ($tupai->level_lapar - ($jamSejakMakan * 2));
+    $tupai->level_stamina = (int) ($tupai->level_stamina - ($jamSejakTidur * 3));
 
-        if ($tupai->level_lapar < 0) {
-            $tupai->level_lapar = 0;
-        }
-        if ($tupai->level_stamina < 0) {
-            $tupai->level_stamina = 0;
-        }
+    // Keep values within 0-100 range
+    $tupai->level_lapar = max(0, $tupai->level_lapar);
+    $tupai->level_stamina = max(0, $tupai->level_stamina);
 
-        if ($tupai->level_lapar < 30) {
-            $tupai->status = 'hungry';
-        } elseif ($tupai->level_stamina < 30) {
-            $tupai->status = 'exhausted';
-        } else {
-            $tupai->status = 'normal';
-        }
-
-        $tupai->save();
-
-        return $tupai;
+    // Logic for status
+    if ($tupai->level_lapar < 30) {
+        $tupai->status = 'hungry';
+    } elseif ($tupai->level_stamina < 30) {
+        $tupai->status = 'exhausted';
+    } else {
+        $tupai->status = 'normal';
     }
+
+    $tupai->save();
+
+    return $tupai;
+}
 
     public function feed($id)
     {
