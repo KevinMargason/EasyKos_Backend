@@ -13,11 +13,17 @@ class CoinController extends Controller
 {
     public function getBalance($userId)
     {
-        $wallet = EasyKoin::firstOrCreate(
-            ['users_id' => $userId],
-            ['total_koin' => 0, 'total_dapat' => 0, 'total_pakai' => 0]
-        );
-        return response()->json(['success' => true, 'data' => $wallet], 200);
+        $dompet = EasyKoin::where('user_id', $userId)->first();
+
+        $totalKoin = $dompet ? $dompet->total_koin : 0;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil mengambil data koin',
+            'data' => [
+                'total_koin' => $totalKoin
+            ]
+        ], 200);
     }
 
     public static function updateCoin($userId, $jumlah, $asal, $deskripsi, $direction = 'credit', $refId = 0)
