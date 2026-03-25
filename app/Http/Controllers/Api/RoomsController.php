@@ -27,7 +27,7 @@ class RoomsController extends Controller
         $request->validate([
             'kos_id'          => 'required|integer',
             'harga'           => 'required|integer',
-            'nomor_kamar'     => 'required|string|max:45',
+            'jumlah_kamar_loop' => 'required|integer|min:1', // Ini yang baru!
             'ukuran_kamar'    => 'required|string|max:45',
             'listrik'         => 'required|in:token,pasca_bayar,tidak_ada',
             'users_id'        => 'required|integer',
@@ -36,24 +36,39 @@ class RoomsController extends Controller
             'foto.*'          => 'image|mimes:jpeg,png,jpg|max:5120'
         ]);
 
-        $data = $request->except(['foto']);
+        $baseData = $request->except(['foto', 'jumlah_kamar_loop']);
 
+        // 1. Amankan Fasilitas
         if ($request->has('fasilitas_kamar')) {
-            $data['fasilitas_kamar'] = json_encode($request->fasilitas_kamar);
+            $baseData['fasilitas_kamar'] = json_encode($request->fasilitas_kamar);
         }
 
+        // 2. Amankan Foto
         if ($request->hasFile('foto')) {
             $fotoPaths = [];
             foreach ($request->file('foto') as $file) {
                 $path = $file->store('rooms', 'public');
                 $fotoPaths[] = $path;
             }
-            $data['foto'] = json_encode($fotoPaths);
+            $baseData['foto'] = json_encode($fotoPaths);
         }
 
-        $room = Rooms::create($data);
+        // 3. JURUS CLONE KAMAR (Looping)
+        $jumlahKamar = $request->jumlah_kamar_loop;
+        $createdRooms = [];
 
-        return response()->json(['success' => true, 'message' => 'Kamar & Foto berhasil ditambahkan!', 'data' => $room], 201);
+        for ($i = 1; $i <= $jumlahKamar; $i++) {
+            $data = $baseData;
+            // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
+            $data['nomor_kamar'] = 'Kamar ' . str_pad($i, 2, '0', STR_PAD_LEFT);
+            $createdRooms[] = Rooms::create($data);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
+            'data' => $createdRooms
+        ], 201);
     }
 
     /**
@@ -82,8 +97,25 @@ class RoomsController extends Controller
         $room = Rooms::find($id);
         if (!$room) return response()->json(['success' => false, 'message' => 'Kamar tidak ditemukan'], 404);
 
-        $room->update($request->all());
-        return response()->json(['success' => true, 'message' => 'Kamar berhasil diupdate', 'data' => $room], 200);
+        $data = $request->except(['foto', '_method']);
+
+        if ($request->has('fasilitas_kamar')) {
+            $data['fasilitas_kamar'] = is_array($request->fasilitas_kamar)
+                ? json_encode($request->fasilitas_kamar)
+                : $request->fasilitas_kamar;
+        }
+
+        if ($request->hasFile('foto')) {
+            $fotoPaths = [];
+            foreach ($request->file('foto') as $file) {
+                $path = $file->store('rooms', 'public');
+                $fotoPaths[] = $path;
+            }
+            $data['foto'] = json_encode($fotoPaths);
+        }
+
+        $room->update($data);
+        return response()->json(['success' => true, 'message' => 'Kamar & Foto berhasil diupdate', 'data' => $room], 200);
     }
 
     /**
