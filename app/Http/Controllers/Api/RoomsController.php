@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Rooms;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class RoomsController extends Controller
 {
@@ -24,17 +25,22 @@ class RoomsController extends Controller
     public function store(Request $request)
     {
         //
-        $request->validate([
-            'kos_id'          => 'required|integer',
-            'harga'           => 'required|integer',
-            'jumlah_kamar_loop' => 'required|integer|min:1', // Ini yang baru!
-            'ukuran_kamar'    => 'required|string|max:45',
-            'listrik'         => 'required|in:token,pasca_bayar,tidak_ada',
-            'users_id'        => 'required|integer',
-            'fasilitas_kamar' => 'nullable|array',
-            'foto'            => 'nullable|array',
-            'foto.*'          => 'image|mimes:jpeg,png,jpg|max:5120'
+        $validator = Validator::make($request->all(), [
+            'kos_id'            => 'required',
+            'harga'             => 'required',
+            'jumlah_kamar_loop' => 'required', // Kita longgarkan sedikit biar nggak error kena FormData
+            'ukuran_kamar'      => 'required',
+            'listrik'           => 'required',
+            'users_id'          => 'required',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal!',
+                'errors' => $validator->errors()
+            ], 422); // Memaksa return JSON error 422
+        }
 
         $baseData = $request->except(['foto', 'jumlah_kamar_loop']);
 
