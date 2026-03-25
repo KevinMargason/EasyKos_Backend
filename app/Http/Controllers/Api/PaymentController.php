@@ -16,6 +16,7 @@ class PaymentController extends Controller
     {
         //
         $payments = Payment::with(['room', 'user'])->get();
+
         return response()->json(['success' => true, 'data' => $payments], 200);
     }
 
@@ -26,22 +27,28 @@ class PaymentController extends Controller
     {
         //
         $request->validate([
-            'rooms_id'         => 'required|integer',
-            'tenant'           => 'required|integer',
+            'rooms_id' => 'required|integer',
+            'tenant' => 'required',
             'jenis_pembayaran' => 'required|in:bulanan,tahunan',
-            'voucher_id'       => 'required|integer'
+            'voucher_id' => 'nullable|integer',
+            'amount'           => 'nullable|numeric',
         ]);
 
         $payment = Payment::create([
-            'rooms_id'         => $request->rooms_id,
-            'tenant'           => $request->tenant,
-            'status'           => 'UNPAID',
-            'tanggal_bayar'    => Carbon::now(),
+            'rooms_id' => $request->rooms_id,
+            'tenant' => $request->tenant,
+            'status' => 'UNPAID',
+            'tanggal_bayar' => Carbon::now(),
             'jenis_pembayaran' => $request->jenis_pembayaran,
-            'voucher_id'       => $request->voucher_id
+            'voucher_id' => $request->voucher_id,
+            'amount' => $request->amount,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Tagihan berhasil dibuat', 'data' => $payment], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment record saved successfully',
+            'data' => $payment,
+        ], 201);
     }
 
     /**
@@ -51,22 +58,26 @@ class PaymentController extends Controller
     {
         //
         $payment = Payment::with(['room', 'user'])->find($id);
-        if (!$payment) return response()->json(['success' => false, 'message' => 'Tagihan tidak ditemukan'], 404);
+        if (! $payment) {
+            return response()->json(['success' => false, 'message' => 'Tagihan tidak ditemukan'], 404);
+        }
+
         return response()->json(['success' => true, 'data' => $payment], 200);
     }
 
     /**
      * Update the specified resource in storage.
      */
-
     public function pay($id)
     {
         $payment = Payment::find($id);
-        if (!$payment) return response()->json(['success' => false, 'message' => 'Tagihan tidak ditemukan'], 404);
+        if (! $payment) {
+            return response()->json(['success' => false, 'message' => 'Tagihan tidak ditemukan'], 404);
+        }
 
         $payment->update([
             'status' => 'PAID',
-            'tanggal_bayar' => Carbon::now()
+            'tanggal_bayar' => Carbon::now(),
         ]);
 
         return response()->json(['success' => true, 'message' => 'Pembayaran berhasil, status menjadi PAID', 'data' => $payment], 200);

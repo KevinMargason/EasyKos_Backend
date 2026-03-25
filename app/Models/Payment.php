@@ -14,7 +14,8 @@ class Payment extends Model
         'status',
         'tanggal_bayar',
         'jenis_pembayaran',
-        'voucher_id'
+        'voucher_id',
+        'amount',
     ];
 
     public function room()
