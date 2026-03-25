@@ -31,6 +31,7 @@ Route::post('/login', [AuthController::class, 'login']);
     Route::apiResource('payments', PaymentController::class);
     Route::apiResource('vouchers', VoucherController::class);
     Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
+    Route::post('payments/info', [PaymentController::class, 'seePayment']);
 
     // Rute untuk Manajemen MyTupai
     Route::apiResource('mytupai', MyTupaiController::class);

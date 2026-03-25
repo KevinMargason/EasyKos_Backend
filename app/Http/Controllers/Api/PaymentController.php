@@ -45,7 +45,6 @@ class PaymentController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
             'message' => 'Payment record saved successfully',
             'data' => $payment,
         ], 201);
@@ -98,4 +97,25 @@ class PaymentController extends Controller
     {
         //
     }
+    public function seePayment(Request $request)
+{
+    // Ambil tenant dari request (misal dikirim: { "tenant": 160423046 })
+    $tenantId = $request->tenant;
+
+    if (!$tenantId) {
+        return response()->json(['success' => false, 'message' => 'Tenant ID diperlukan'], 400);
+    }
+
+    $payments = Payment::with(['room', 'user'])
+        ->where('tenant', $tenantId)
+        // Prioritas UNPAID di atas (1), baru PAID (2)
+        ->orderByRaw("CASE WHEN status = 'UNPAID' THEN 1 ELSE 2 END")
+        ->orderBy('updated_at', 'desc')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $payments
+    ], 200);
+}
 }
