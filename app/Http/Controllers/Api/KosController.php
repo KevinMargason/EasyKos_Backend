@@ -84,10 +84,17 @@ class KosController extends Controller
     {
         //
         $kos = Kos::find($id);
-        if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        if (!$kos) {
+            return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        }
 
+        // JURUS SAPU BERSIH: Hapus semua kamar yang nempel di Kos ini dulu
+        \App\Models\Rooms::where('kos_id', $id)->delete();
+
+        // Setelah kamarnya rata dengan tanah, baru eksekusi induknya (Kos)
         $kos->delete();
-        return response()->json(['success' => true, 'message' => 'Kos berhasil dihapus'], 200);
+
+        return response()->json(['success' => true, 'message' => 'Kos beserta seluruh kamarnya berhasil dibumihanguskan!'], 200);
     }
 
     public function currentKos(Request $request)
