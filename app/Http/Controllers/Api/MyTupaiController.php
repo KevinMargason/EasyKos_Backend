@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\MyTupai;
+use App\Models\TupaiHistori;
+use App\Models\UMisi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -16,6 +18,7 @@ class MyTupaiController extends Controller
     {
         //
         $tupai = MyTupai::with('user')->get();
+
         return response()->json(['success' => true, 'data' => $tupai], 200);
     }
 
@@ -24,32 +27,50 @@ class MyTupaiController extends Controller
      */
     public function store(Request $request)
     {
-        //
-        $request->validate([
-            'nama'     => 'required|string|max:45',
-            'users_id' => 'required|integer'
-        ]);
+        $validated = $request->validate([
+        'users_id' => 'required',
+        'nama' => 'required|string|max:255',
+    ]);
 
-        $existingTupai = MyTupai::where('users_id', $request->users_id)->first();
-        if ($existingTupai) {
-            return response()->json(['success' => false, 'message' => 'User ini sudah memiliki Tupai!'], 400);
-        }
+    // Cek jika user sudah punya
+    $exists = MyTupai::where('users_id', $validated['users_id'])->first();
+    if ($exists) return response()->json(['success' => true, 'data' => $exists]);
 
-        $tupai = MyTupai::create([
-            'nama'           => $request->nama,
-            'level'          => '1',
-            'xp'             => '0',
-            'level_lapar'    => 100,
-            'level_stamina'  => 100,
-            'status'         => 'normal',
-            'terakhir_makan' => Carbon::now(),
-            'terakhir_tidur' => Carbon::now(),
-            'tidur_sampai'   => Carbon::now(),
-            'users_id'       => $request->users_id
-        ]);
+    $tupai = MyTupai::create([
+        'users_id' => $validated['users_id'],
+        'nama' => $validated['nama'],
+        'level' => 1,
+        'xp' => 0,
+        'level_lapar' => 100,
+        'level_stamina' => 100,
+        'status' => 'normal',
+        'terakhir_makan' => now(),
+        'terakhir_tidur' => now(),
+    ]);
 
-        return response()->json(['success' => true, 'message' => 'Tupai berhasil diadopsi!', 'data' => $tupai], 201);
+    return response()->json(['success' => true, 'message' => 'Berhasil adopsi!', 'data' => $tupai]);
+    
+
+    $tupai = MyTupai::create([
+        'users_id' => $validated['users_id'],
+        'nama' => $validated['nama'],
+        'level' => 1,
+        'xp' => 0,
+        'level_lapar' => 100,
+        'level_stamina' => 100,
+        'status' => 'normal',
+        'terakhir_makan' => now(),
+        'terakhir_tidur' => now(),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Tupai berhasil diadopsi!',
+        'data' => $tupai
+    ]);
     }
+
+    
 
     /**
      * Display the specified resource.
@@ -58,7 +79,10 @@ class MyTupaiController extends Controller
     {
         //
         $tupai = MyTupai::find($id);
-        if (!$tupai) return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        if (! $tupai) {
+            return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        }
+
         return response()->json(['success' => true, 'data' => $tupai], 200);
     }
 
@@ -72,8 +96,12 @@ class MyTupaiController extends Controller
         $tupai->level_lapar -= ($jamSejakMakan * 2);
         $tupai->level_stamina -= ($jamSejakTidur * 3);
 
-        if ($tupai->level_lapar < 0) $tupai->level_lapar = 0;
-        if ($tupai->level_stamina < 0) $tupai->level_stamina = 0;
+        if ($tupai->level_lapar < 0) {
+            $tupai->level_lapar = 0;
+        }
+        if ($tupai->level_stamina < 0) {
+            $tupai->level_stamina = 0;
+        }
 
         if ($tupai->level_lapar < 30) {
             $tupai->status = 'hungry';
@@ -84,13 +112,16 @@ class MyTupaiController extends Controller
         }
 
         $tupai->save();
+
         return $tupai;
     }
 
     public function feed($id)
     {
         $tupai = MyTupai::find($id);
-        if (!$tupai) return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        if (! $tupai) {
+            return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        }
 
         $tupai = $this->hitungStatusTerkini($tupai);
 
@@ -101,7 +132,9 @@ class MyTupaiController extends Controller
         $laparSebelum = $tupai->level_lapar;
         $tupai->level_lapar += 30;
         $tupai->xp += 10;
-        if ($tupai->level_lapar > 100) $tupai->level_lapar = 100;
+        if ($tupai->level_lapar > 100) {
+            $tupai->level_lapar = 100;
+        }
 
         if ($tupai->xp >= 100) {
             $tupai->level += 1;
@@ -111,7 +144,7 @@ class MyTupaiController extends Controller
                 $tupai->users_id,
                 $tupai->level * 20,
                 'level_up',
-                'Bonus naik level Tupai ke level ' . $tupai->level
+                'Bonus naik level Tupai ke level '.$tupai->level
             );
         }
 
@@ -121,7 +154,7 @@ class MyTupaiController extends Controller
 
         $this->updateMissionProgress($tupai->users_id, 'feed');
 
-        \App\Models\TupaiHistori::create([
+        TupaiHistori::create([
             'myTupai_id' => $tupai->id,
             'aktivitas_tipe' => 'feed',
             'aktivitas_waktu' => Carbon::now(),
@@ -129,7 +162,7 @@ class MyTupaiController extends Controller
             'lapar_setelah' => $tupai->level_lapar,
             'energi_sebelum' => $tupai->level_stamina,
             'energi_setelah' => $tupai->level_stamina,
-            'notes' => 'Tupai diberi makan, nyam nyam!'
+            'notes' => 'Tupai diberi makan, nyam nyam!',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Tupai berhasil diberi makan!', 'data' => $tupai], 200);
@@ -138,7 +171,9 @@ class MyTupaiController extends Controller
     public function sleep($id)
     {
         $tupai = MyTupai::find($id);
-        if (!$tupai) return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        if (! $tupai) {
+            return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        }
 
         $tupai = $this->hitungStatusTerkini($tupai);
 
@@ -155,7 +190,7 @@ class MyTupaiController extends Controller
 
         $this->updateMissionProgress($tupai->users_id, 'sleep');
 
-        \App\Models\TupaiHistori::create([
+        TupaiHistori::create([
             'myTupai_id' => $tupai->id,
             'aktivitas_tipe' => 'sleep',
             'aktivitas_waktu' => Carbon::now(),
@@ -163,7 +198,7 @@ class MyTupaiController extends Controller
             'lapar_setelah' => $tupai->level_lapar,
             'energi_sebelum' => $energiSebelum,
             'energi_setelah' => $tupai->level_stamina,
-            'notes' => 'Tupai pergi tidur zzz...'
+            'notes' => 'Tupai pergi tidur zzz...',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Tupai lagi menikmati kasur!', 'data' => $tupai], 200);
@@ -171,7 +206,7 @@ class MyTupaiController extends Controller
 
     private function updateMissionProgress($userId, $jenisMisi)
     {
-        $misiUser = \App\Models\UMisi::where('users_id', $userId)
+        $misiUser = UMisi::where('users_id', $userId)
             ->where('status', 'in_progress')
             ->whereHas('mission', function ($query) use ($jenisMisi) {
                 $query->where('jenis', $jenisMisi);
@@ -188,6 +223,17 @@ class MyTupaiController extends Controller
             $misiUser->save();
         }
     }
+
+    public function checkMyTupai($userId)
+{
+    $tupai = MyTupai::where('users_id', $userId)->first();
+    if (!$tupai) {
+        return response()->json(['success' => false, 'message' => 'Belum ada tupai'], 404);
+    }
+    // Hitung status terbaru sebelum dikirim ke frontend
+    $tupai = $this->hitungStatusTerkini($tupai);
+    return response()->json(['success' => true, 'data' => $tupai]);
+}
 
     /**
      * Update the specified resource in storage.

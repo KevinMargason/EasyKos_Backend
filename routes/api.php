@@ -37,6 +37,8 @@ Route::post('/login', [AuthController::class, 'login']);
     Route::apiResource('mytupai', MyTupaiController::class);
     Route::post('mytupai/{id}/feed', [MyTupaiController::class, 'feed']);
     Route::post('mytupai/{id}/sleep', [MyTupaiController::class, 'sleep']);
+    Route::get('mytupai/check', [MyTupaiController::class, 'checkMyTupai']);
+    Route::get('mytupai/check/{userId}', [MyTupaiController::class, 'checkMyTupai']);
 
     // Rute untuk Daily Login dan Streak Mission
     Route::post('daily-login/claim', [DailyLoginController::class, 'claimLogin']);
