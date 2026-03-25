@@ -33,9 +33,9 @@ class DailyLoginController extends Controller
                 $yesterday = Carbon::yesterday();
                 $koinReward = 10;
 
-                $streakLog = StreakLog::where('user_id', $userId)->first();
+                $streakLog = StreakLog::where('users_id', $userId)->first();
                 $dompet = EasyKoin::firstOrCreate(
-                    ['user_id' => $userId],
+                    ['users_id' => $userId],
                     ['total_koin' => 0]
                 );
 
@@ -63,7 +63,7 @@ class DailyLoginController extends Controller
                     $streakLog->save();
                 } else {
                     $streakLog = StreakLog::create([
-                        'user_id' => $userId,
+                        'users_id' => $userId,
                         'streak_count' => 1,
                         'last_login_date' => now()
                     ]);
@@ -98,8 +98,8 @@ class DailyLoginController extends Controller
             return response()->json(['success' => false, 'message' => 'User tidak valid.'], 401);
         }
 
-        $streakLog = StreakLog::where('user_id', $userId)->first();
-        $dompet = EasyKoin::where('user_id', $userId)->first();
+        $streakLog = StreakLog::where('users_id', $userId)->first();
+        $dompet = EasyKoin::where('usersx_id', $userId)->first();
 
         return response()->json([
             'success' => true,

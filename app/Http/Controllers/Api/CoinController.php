@@ -13,7 +13,7 @@ class CoinController extends Controller
 {
     public function getBalance($userId)
     {
-        $dompet = EasyKoin::where('user_id', $userId)->first();
+        $dompet = EasyKoin::where('users_id', $userId)->first();
 
         $totalKoin = $dompet ? $dompet->total_koin : 0;
 
