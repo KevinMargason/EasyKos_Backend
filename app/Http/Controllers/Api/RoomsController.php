@@ -74,7 +74,7 @@ class RoomsController extends Controller
         }
 
         // 3. JURUS CLONE KAMAR (Looping)
-        $jumlahKamar = $request->jumlah_kamar_loop;
+        $jumlahKamar = $request->jumlah_kamar_loop + 1;
         $createdRooms = [];
 
         for ($i = 1; $i <= $jumlahKamar; $i++) {
