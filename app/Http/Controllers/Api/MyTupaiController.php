@@ -91,20 +91,22 @@ class MyTupaiController extends Controller
     {
         $sekarang = Carbon::now();
 
-        $menitSejakMakan = $sekarang->diffInMinutes(Carbon::parse($tupai->terakhir_makan));
-        $menitSejakTidur = $sekarang->diffInMinutes(Carbon::parse($tupai->terakhir_tidur));
+        $detikSejakMakan = $sekarang->diffInSeconds(Carbon::parse($tupai->terakhir_makan));
+        $detikSejakTidur = $sekarang->diffInSeconds(Carbon::parse($tupai->terakhir_tidur));
 
         $perluDisave = false;
 
-        if ($menitSejakMakan >= 1) {
-            $pengurangLapar = $menitSejakMakan * 5;
+        // Kurangi lapar setiap 60 detik (1 menit) sebesar 5 poin
+        $pengurangLapar = floor($detikSejakMakan / 60) * 5;
+        if ($pengurangLapar > 0) {
             $tupai->level_lapar = max(0, (int) ($tupai->level_lapar - $pengurangLapar));
             $tupai->terakhir_makan = $sekarang;
             $perluDisave = true;
         }
 
-        if ($menitSejakTidur >= 1) {
-            $pengurangStamina = $menitSejakTidur * 5;
+        // Kurangi stamina setiap 60 detik (1 menit) sebesar 5 poin
+        $pengurangStamina = floor($detikSejakTidur / 60) * 5;
+        if ($pengurangStamina > 0) {
             $tupai->level_stamina = max(0, (int) ($tupai->level_stamina - $pengurangStamina));
             $tupai->terakhir_tidur = $sekarang;
             $perluDisave = true;
