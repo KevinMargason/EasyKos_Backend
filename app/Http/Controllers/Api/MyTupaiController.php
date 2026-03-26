@@ -9,8 +9,8 @@ use App\Models\TupaiHistori;
 use App\Models\UMisi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MyTupaiController extends Controller
 {
@@ -61,18 +61,17 @@ class MyTupaiController extends Controller
                 'status' => 'normal',
                 'terakhir_makan' => now(),
                 'terakhir_tidur' => now(),
+                'tidur_sampai' => now(),
             ]);
 
             return response()->json(['success' => true, 'message' => 'Berhasil adopsi!', 'data' => $tupai]);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
-
-
 
     /**
      * Display the specified resource.
@@ -143,7 +142,7 @@ class MyTupaiController extends Controller
             $hargaMakanan = 10;
             $dompet = EasyKoin::where('users_id', $tupai->users_id)->first();
 
-            if (!$dompet || $dompet->total_koin < $hargaMakanan) {
+            if (! $dompet || $dompet->total_koin < $hargaMakanan) {
                 return response()->json(['success' => false, 'message' => 'Koin tidak cukup! Butuh 10 Koin untuk beli makanan.'], 400);
             }
 
@@ -168,7 +167,7 @@ class MyTupaiController extends Controller
                     $tupai->users_id,
                     $tupai->level * 20,
                     'level_up',
-                    'Bonus naik level Tupai ke level ' . $tupai->level
+                    'Bonus naik level Tupai ke level '.$tupai->level
                 );
             }
 
@@ -241,7 +240,7 @@ class MyTupaiController extends Controller
 
     private function handleDbError(\Throwable $e)
     {
-        Log::error('MyTupaiController DB error: ' . $e->getMessage(), ['exception' => $e]);
+        Log::error('MyTupaiController DB error: '.$e->getMessage(), ['exception' => $e]);
 
         return response()->json([
             'success' => false,
@@ -278,11 +277,12 @@ class MyTupaiController extends Controller
             }
 
             $tupai = MyTupai::where('users_id', $userId)->first();
-            if (!$tupai) {
+            if (! $tupai) {
                 return response()->json(['success' => false, 'message' => 'Belum ada tupai'], 404);
             }
             // Hitung status terbaru sebelum dikirim ke frontend
             $tupai = $this->hitungStatusTerkini($tupai);
+
             return response()->json(['success' => true, 'data' => $tupai]);
         } catch (\Throwable $e) {
             return $this->handleDbError($e);
