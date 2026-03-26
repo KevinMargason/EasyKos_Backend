@@ -4,20 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kos;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class KosController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // 1. TAMPILKAN KOS (Sudah ada isolasi Tenant!)
     public function index(Request $request)
     {
-        //
         $query = Kos::query();
 
+        // 🔥 INI YANG BIKIN KOS TERISOLASI PER OWNER:
         if ($request->has('owner_id')) {
             $query->where('users_id', $request->input('owner_id'));
         }
@@ -30,12 +26,9 @@ class KosController extends Controller
         ], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    // 2. TAMBAH KOS BARU
     public function store(Request $request)
     {
-        //
         $request->validate([
             'nama'            => 'required|string|max:255',
             'alamat'          => 'required|string',
@@ -48,7 +41,7 @@ class KosController extends Controller
         ]);
 
         $data = $request->all();
-
+        // Pakai users_id sesuai database TiDB
         $data['users_id'] = $request->user() ? $request->user()->id : $request->input('owner_id');
 
         if ($request->has('fasilitas_umum')) {
@@ -64,100 +57,55 @@ class KosController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    // 3. LIHAT DETAIL 1 KOS
+    public function show($id)
     {
-        //
-        $kos = Kos::with(['aturans', 'fasilitas', 'owner'])->find($id);
-        if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
-
+        $kos = Kos::find($id);
+        if (!$kos) {
+            return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        }
         return response()->json(['success' => true, 'data' => $kos], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    // 4. EDIT KOS (Ini yang bikin error <!DOCTYPE tadi)
+    public function update(Request $request, $id)
     {
-        //
-        $kos = Kos::find($id);
-        if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
-
-        $kos->update($request->all());
-        return response()->json(['success' => true, 'message' => 'Kos berhasil diupdate', 'data' => $kos], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
         $kos = Kos::find($id);
         if (!$kos) {
             return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
         }
 
-        // JURUS SAPU BERSIH: Hapus semua kamar yang nempel di Kos ini dulu
-        \App\Models\Rooms::where('kos_id', $id)->delete();
+        $data = $request->all();
 
-        // Setelah kamarnya rata dengan tanah, baru eksekusi induknya (Kos)
-        $kos->delete();
-
-        return response()->json(['success' => true, 'message' => 'Kos beserta seluruh kamarnya berhasil dibumihanguskan!'], 200);
-    }
-
-    public function currentKos(Request $request)
-    {
-        $user = $request->user();
-
-        $room = DB::table('rooms')->where('users_id', $user->id)->first();
-
-        if (!$room) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kamu belum menyewa kamar kos apapun.'
-            ], 404);
+        // Handle array fasilitas
+        if ($request->has('fasilitas_umum')) {
+            $data['fasilitas_umum'] = is_array($request->fasilitas_umum)
+                ? json_encode($request->fasilitas_umum)
+                : $request->fasilitas_umum;
         }
 
-        $kos = DB::table('kos')->where('id', $room->kos_id)->first();
+        $kos->update($data);
 
         return response()->json([
             'success' => true,
-            'data'    => $kos
+            'message' => 'Kos berhasil diperbarui!',
+            'data' => $kos
         ], 200);
     }
 
-    public function allResidents()
+    // 5. HAPUS KOS (Ini juga yang bikin error <!DOCTYPE)
+    public function destroy($id)
     {
-        $residents = DB::table('users')
-            ->select('id', 'name', 'email', 'no_hp', 'role')
-            ->where('role', 'tenant')
-            ->get();
+        $kos = Kos::find($id);
+        if (!$kos) {
+            return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        }
+
+        $kos->delete();
 
         return response()->json([
             'success' => true,
-            'data'    => $residents
-        ], 200);
-    }
-
-    public function kosResidents($kosId)
-    {
-        $userIds = DB::table('rooms')
-            ->where('kos_id', $kosId)
-            ->pluck('users_id');
-
-        // Ambil data profil mereka
-        $residents = DB::table('users')
-            ->select('id', 'name', 'email', 'no_hp', 'role')
-            ->whereIn('id', $userIds)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data'    => $residents
+            'message' => 'Kos berhasil dihapus!'
         ], 200);
     }
 }

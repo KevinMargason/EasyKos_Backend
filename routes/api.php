@@ -21,53 +21,54 @@ use App\Http\Controllers\Api\VoucherController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-    // Rute untuk Manajemen Kos
-    Route::apiResource('kos', KosController::class);
-    Route::apiResource('rooms', RoomsController::class);
-    Route::apiResource('fasilitas', FasilitasController::class);
-    Route::apiResource('aturan', AturanController::class);
+// Rute untuk Manajemen Kos
+Route::apiResource('kos', KosController::class);
+Route::apiResource('rooms', RoomsController::class);
+Route::apiResource('fasilitas', FasilitasController::class);
+Route::apiResource('aturan', AturanController::class);
 
-    // Rute untuk Manajemen Pembayaran dan Voucher
-    Route::apiResource('payments', PaymentController::class);
-    Route::apiResource('vouchers', VoucherController::class);
-    Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
-    Route::post('payments/info', [PaymentController::class, 'seePayment']);
+// Rute untuk Manajemen Pembayaran dan Voucher
+Route::apiResource('payments', PaymentController::class);
+Route::apiResource('vouchers', VoucherController::class);
+Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
+Route::post('payments/info', [PaymentController::class, 'seePayment']);
 
-    // Rute untuk Manajemen MyTupai
-    Route::apiResource('mytupai', MyTupaiController::class);
-    Route::post('mytupai/{id}/feed', [MyTupaiController::class, 'feed']);
-    Route::post('mytupai/{id}/sleep', [MyTupaiController::class, 'sleep']);
-    Route::get('mytupai/check', [MyTupaiController::class, 'checkMyTupai']);
-    Route::get('mytupai/check/{userId}', [MyTupaiController::class, 'checkMyTupai']);
+// Rute untuk Manajemen MyTupai
+Route::apiResource('mytupai', MyTupaiController::class);
+Route::post('mytupai/{id}/feed', [MyTupaiController::class, 'feed']);
+Route::post('mytupai/{id}/sleep', [MyTupaiController::class, 'sleep']);
+Route::get('mytupai/check', [MyTupaiController::class, 'checkMyTupai']);
+Route::get('mytupai/check/{userId}', [MyTupaiController::class, 'checkMyTupai']);
 
-    // Rute untuk Daily Login dan Streak Mission
-    Route::post('daily-login/claim', [DailyLoginController::class, 'claimLogin']);
-    Route::get('missions', [MisiController::class, 'index']);
-    Route::post('missions/claim', [MisiController::class, 'claimReward']);
+// Rute untuk Daily Login dan Streak Mission
+Route::post('daily-login/claim', [DailyLoginController::class, 'claimLogin']);
+Route::get('/daily-login/status', [DailyLoginController::class, 'getStreakStatus']);
+Route::get('missions', [MisiController::class, 'index']);
+Route::post('missions/claim', [MisiController::class, 'claimReward']);
 
-    // Rute untuk Manajemen Koin
-    Route::get('wallet/balance/{userId}', [CoinController::class, 'getBalance']);
-    Route::post('rewards/redeem', [RewardController::class, 'redeem']);
+// Rute untuk Manajemen Koin
+Route::get('wallet/balance/{userId}', [CoinController::class, 'getBalance']);
+Route::post('rewards/redeem', [RewardController::class, 'redeem']);
 
-    // Rute untuk Profil Pengguna
-    Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-    Route::put('/users/profile', [ProfileController::class, 'update']);
+// Rute untuk Profil Pengguna
+Route::get('/profile', [ProfileController::class, 'show']);
+Route::put('/profile', [ProfileController::class, 'update']);
+Route::put('/users/profile', [ProfileController::class, 'update']);
 
-    // Rute untuk Manajemen Metode Pembayaran
-    Route::get('/payment-methods', [PMController::class, 'index']);
-    Route::post('/payment-methods', [PMController::class, 'store']);
-    Route::put('/payment-methods/{id}', [PMController::class, 'update']);
-    Route::delete('/payment-methods/{id}', [PMController::class, 'destroy']);
+// Rute untuk Manajemen Metode Pembayaran
+Route::get('/payment-methods', [PMController::class, 'index']);
+Route::post('/payment-methods', [PMController::class, 'store']);
+Route::put('/payment-methods/{id}', [PMController::class, 'update']);
+Route::delete('/payment-methods/{id}', [PMController::class, 'destroy']);
 
-    // Rute untuk Manajemen Aturan Kos
-    Route::get('/kos/current', [KosController::class, 'currentKos']);
-    Route::get('/residents', [KosController::class, 'allResidents']);
-    Route::get('/kos/{kosId}/residents', [KosController::class, 'kosResidents']);
-    Route::get('/kos/{kosId}/rooms', [RoomsController::class, 'getRoomsByKos']);
+// Rute untuk Manajemen Aturan Kos
+Route::get('/kos/current', [KosController::class, 'currentKos']);
+Route::get('/residents', [KosController::class, 'allResidents']);
+Route::get('/kos/{kosId}/residents', [KosController::class, 'kosResidents']);
+Route::get('/kos/{kosId}/rooms', [RoomsController::class, 'getRoomsByKos']);
 
-    // Rute untuk Chat
-    Route::get('/chats', [ChatController::class, 'index']);
-    Route::get('/chats/{threadId}', [ChatController::class, 'show']);
-    Route::get('/chats/{threadId}/messages', [ChatController::class, 'messages']);
-    Route::post('/messages', [ChatController::class, 'sendMessage']);
+// Rute untuk Chat
+Route::get('/chats', [ChatController::class, 'index']);
+Route::get('/chats/{threadId}', [ChatController::class, 'show']);
+Route::get('/chats/{threadId}/messages', [ChatController::class, 'messages']);
+Route::post('/messages', [ChatController::class, 'sendMessage']);
