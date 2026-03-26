@@ -17,7 +17,6 @@ class DailyLoginController extends Controller
     public function claimLogin(Request $request)
     {
         $userId = $request->input('user_id');
-
         if (!$userId && $request->user()) {
             $userId = $request->user()->id;
         }
@@ -31,52 +30,59 @@ class DailyLoginController extends Controller
 
                 $today = Carbon::today();
                 $yesterday = Carbon::yesterday();
-                $koinReward = 10;
+                $koinReward = 50; // Langsung kita kasih 50 koin aja bos!
 
                 $streakLog = StreakLog::where('users_id', $userId)->first();
                 $dompet = EasyKoin::firstOrCreate(
                     ['users_id' => $userId],
-                    ['total_koin' => 0]
+                    ['total_koin' => 0, 'total_dapat' => 0, 'total_pakai' => 0]
                 );
 
                 if ($streakLog) {
-                    $lastLoginDate = Carbon::parse($streakLog->last_login_date)->startOfDay();
+                    $lastUpdate = Carbon::parse($streakLog->updated_at)->startOfDay();
 
-                    if ($lastLoginDate->eq($today)) {
+                    // Skenario A: Udah klaim hari ini
+                    if ($lastUpdate->eq($today) && $streakLog->streak_sekarang > 0) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Kamu sudah klaim koin hari ini. Besok balik lagi ya, bosku!',
+                            'message' => 'Sudah klaim hari ini',
                         ], 400);
                     }
 
-                    if ($lastLoginDate->eq($yesterday)) {
-                        $streakLog->streak_count += 1;
-
-                        if ($streakLog->streak_count % 7 == 0) {
-                            $koinReward += 50;
+                    // Skenario B: Streak berlanjut
+                    if ($lastUpdate->eq($yesterday)) {
+                        $streakLog->streak_sekarang += 1;
+                        if ($streakLog->streak_sekarang > $streakLog->top_streak) {
+                            $streakLog->top_streak = $streakLog->streak_sekarang;
                         }
-                    } else {
-                        $streakLog->streak_count = 1;
+                    }
+                    // Skenario C: Streak putus
+                    else {
+                        $streakLog->streak_sekarang = 1;
                     }
 
-                    $streakLog->last_login_date = now();
+                    $streakLog->updated_at = now(); // Kita pake updated_at sebagai penanda hari
                     $streakLog->save();
                 } else {
+                    // Skenario D: User baru pertama kali klaim
                     $streakLog = StreakLog::create([
                         'users_id' => $userId,
-                        'streak_count' => 1,
-                        'last_login_date' => now()
+                        'jenis' => 'login',
+                        'streak_sekarang' => 1,
+                        'top_streak' => 1
                     ]);
                 }
 
+                // Tambah Koin
                 $dompet->total_koin += $koinReward;
+                $dompet->total_dapat += $koinReward;
                 $dompet->save();
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Klaim harian berhasil!',
+                    'message' => 'Klaim berhasil!',
                     'data' => [
-                        'streak_hari_ini' => $streakLog->streak_count,
+                        'streak_hari_ini' => $streakLog->streak_sekarang,
                         'koin_didapat' => $koinReward,
                         'total_koin_sekarang' => $dompet->total_koin
                     ]
@@ -85,27 +91,33 @@ class DailyLoginController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengklaim koin: ' . $e->getMessage()
+                'message' => 'Gagal: ' . $e->getMessage()
             ], 500);
         }
     }
 
     public function getStreakStatus(Request $request)
     {
-        $userId = Auth::id();
+        $userId = $request->input('user_id');
+        if (!$userId && $request->user()) {
+            $userId = $request->user()->id;
+        }
 
         if (!$userId) {
             return response()->json(['success' => false, 'message' => 'User tidak valid.'], 401);
         }
 
         $streakLog = StreakLog::where('users_id', $userId)->first();
-        $dompet = EasyKoin::where('usersx_id', $userId)->first();
+        $dompet = EasyKoin::where('users_id', $userId)->first();
+
+        // Kita akali: karena nggak ada 'last_login_date', kita cek dari 'updated_at'
+        $lastLoginDate = $streakLog ? Carbon::parse($streakLog->updated_at)->toDateString() : null;
 
         return response()->json([
             'success' => true,
             'data' => [
-                'streak_count' => $streakLog ? $streakLog->streak_count : 0,
-                'last_login_date' => $streakLog ? $streakLog->last_login_date->toDateString() : null,
+                'streak_count' => $streakLog ? $streakLog->streak_sekarang : 0,
+                'last_login_date' => $lastLoginDate,
                 'total_koin' => $dompet ? $dompet->total_koin : 0
             ]
         ], 200);

@@ -13,10 +13,14 @@ class KosController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         //
-        $kos = Kos::all();
+        $query = Kos::query();
+        if ($request->has('owner_id')) {
+            $query->where('users_id', $request->input('owner_id'));
+        }
+        $kos = $query->get();
         return response()->json(['success' => true, 'data' => $kos], 200);
     }
 
@@ -39,17 +43,19 @@ class KosController extends Controller
 
         $data = $request->all();
 
-        if ($request->user()) {
-            $data['users_id'] = $request->user()->id;
-        }
+        $data['users_id'] = $request->user() ? $request->user()->id : $request->input('owner_id');
 
         if ($request->has('fasilitas_umum')) {
-            $data['fasilitas_umum'] = json_encode($request->fasilitas_umum);
+            $data['fasilitas_umum'] = json_encode($request->input('fasilitas_umum'));
         }
 
         $kos = Kos::create($data);
 
-        return response()->json(['success' => true, 'message' => 'Kos berhasil ditambahkan', 'data' => $kos], 201);
+        return response()->json([
+            'success' => true,
+            'message' => 'Kos berhasil ditambahkan',
+            'data' => $kos
+        ], 201);
     }
 
     /**
