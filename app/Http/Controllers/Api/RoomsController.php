@@ -73,21 +73,27 @@ class RoomsController extends Controller
         }
 
         // 3. JURUS CLONE KAMAR (Looping)
-        $jumlahKamar = $request->jumlah_kamar_loop;
-        $createdRooms = [];
+        // 3. JURUS CLONE KAMAR (Looping)
+$jumlahKamar = $request->jumlah_kamar_loop;
+$createdRooms = [];
 
-        for ($i = 1; $i <= $jumlahKamar; $i++) {
-            $data = $baseData;
-            // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
-            $data['nomor_kamar'] = 'Kamar ' . str_pad($i, 2, '0', STR_PAD_LEFT);
-            $createdRooms[] = Rooms::create($data);
-        }
+for ($i = 1; $i <= $jumlahKamar; $i++) {
+    $data = $baseData;
+    
+    // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
+    $data['nomor_kamar'] = 'Kamar ' . str_pad($i, 2, '0', STR_PAD_LEFT);
 
-        return response()->json([
-            'success' => true,
-            'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
-            'data' => $createdRooms
-        ], 201);
+    /**
+     * LOGIKA BARU:
+     * Jika ini BUKAN kamar pertama ($i > 1), maka kita set users_id menjadi null.
+     * Kamar pertama ($i == 1) tetap menggunakan users_id dari request.
+     */
+    if ($i > 1) {
+        $data['users_id'] = null;
+    }
+
+    $createdRooms[] = Rooms::create($data);
+}
     }
 
     /**
@@ -148,5 +154,37 @@ class RoomsController extends Controller
 
         $room->delete();
         return response()->json(['success' => true, 'message' => 'Kamar berhasil dihapus'], 200);
+    }
+    public function updateOwner(Request $request, string $id)
+    {
+    // 1. Validasi input
+    $validator = Validator::make($request->all(), [
+        'users_id' => 'required|exists:users,id', // Pastikan ID user baru ada di tabel users
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal!',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    // 2. Cari kamarnya
+    $room = Rooms::find($id);
+    if (!$room) {
+        return response()->json(['success' => false, 'message' => 'Kamar tidak ditemukan'], 404);
+    }
+
+    // 3. Update hanya users_id
+    $room->update([
+        'users_id' => $request->users_id
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pemilik kamar berhasil diperbarui',
+        'data' => $room->load('kos') // Load relasi biar data yang dikirim lengkap
+    ], 200);
     }
 }
