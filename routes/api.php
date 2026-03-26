@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DailyLoginController;
 use App\Http\Controllers\Api\FasilitasController;
 use App\Http\Controllers\Api\RoomsController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\KosController;
 use App\Http\Controllers\Api\MisiController;
 use App\Http\Controllers\Api\MyTupaiController;
@@ -32,6 +33,16 @@ Route::apiResource('payments', PaymentController::class);
 Route::apiResource('vouchers', VoucherController::class);
 Route::post('payments/{id}/pay', [PaymentController::class, 'pay']);
 Route::post('payments/info', [PaymentController::class, 'seePayment']);
+
+// Health check route
+Route::get('health', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json(['success' => true, 'message' => 'API is healthy', 'database' => 'connected']);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'API health check failed', 'error' => $e->getMessage()], 503);
+    }
+});
 
 // Rute untuk Manajemen MyTupai
 Route::apiResource('mytupai', MyTupaiController::class);
