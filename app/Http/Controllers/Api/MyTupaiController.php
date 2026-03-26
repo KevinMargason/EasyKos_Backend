@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EasyKoin;
 use App\Models\MyTupai;
 use App\Models\TupaiHistori;
 use App\Models\UMisi;
@@ -28,49 +29,49 @@ class MyTupaiController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-        'users_id' => 'required',
-        'nama' => 'required|string|max:255',
-    ]);
+            'users_id' => 'required',
+            'nama' => 'required|string|max:255',
+        ]);
 
-    // Cek jika user sudah punya
-    $exists = MyTupai::where('users_id', $validated['users_id'])->first();
-    if ($exists) return response()->json(['success' => true, 'data' => $exists]);
+        // Cek jika user sudah punya
+        $exists = MyTupai::where('users_id', $validated['users_id'])->first();
+        if ($exists) return response()->json(['success' => true, 'data' => $exists]);
 
-    $tupai = MyTupai::create([
-        'users_id' => $validated['users_id'],
-        'nama' => $validated['nama'],
-        'level' => 1,
-        'xp' => 0,
-        'level_lapar' => 100,
-        'level_stamina' => 100,
-        'status' => 'normal',
-        'terakhir_makan' => now(),
-        'terakhir_tidur' => now(),
-    ]);
+        $tupai = MyTupai::create([
+            'users_id' => $validated['users_id'],
+            'nama' => $validated['nama'],
+            'level' => 1,
+            'xp' => 0,
+            'level_lapar' => 100,
+            'level_stamina' => 100,
+            'status' => 'normal',
+            'terakhir_makan' => now(),
+            'terakhir_tidur' => now(),
+        ]);
 
-    return response()->json(['success' => true, 'message' => 'Berhasil adopsi!', 'data' => $tupai]);
-    
+        return response()->json(['success' => true, 'message' => 'Berhasil adopsi!', 'data' => $tupai]);
 
-    $tupai = MyTupai::create([
-        'users_id' => $validated['users_id'],
-        'nama' => $validated['nama'],
-        'level' => 1,
-        'xp' => 0,
-        'level_lapar' => 100,
-        'level_stamina' => 100,
-        'status' => 'normal',
-        'terakhir_makan' => now(),
-        'terakhir_tidur' => now(),
-    ]);
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Tupai berhasil diadopsi!',
-        'data' => $tupai
-    ]);
+        $tupai = MyTupai::create([
+            'users_id' => $validated['users_id'],
+            'nama' => $validated['nama'],
+            'level' => 1,
+            'xp' => 0,
+            'level_lapar' => 100,
+            'level_stamina' => 100,
+            'status' => 'normal',
+            'terakhir_makan' => now(),
+            'terakhir_tidur' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tupai berhasil diadopsi!',
+            'data' => $tupai
+        ]);
     }
 
-    
+
 
     /**
      * Display the specified resource.
@@ -86,40 +87,57 @@ class MyTupaiController extends Controller
         return response()->json(['success' => true, 'data' => $tupai], 200);
     }
 
-   private function hitungStatusTerkini($tupai)
-{
-    $sekarang = Carbon::now();
+    private function hitungStatusTerkini($tupai)
+    {
+        $sekarang = Carbon::now();
 
-    $jamSejakMakan = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_makan));
-    $jamSejakTidur = $sekarang->diffInHours(Carbon::parse($tupai->terakhir_tidur));
+        $menitSejakMakan = $sekarang->diffInMinutes(Carbon::parse($tupai->terakhir_makan));
+        $menitSejakTidur = $sekarang->diffInMinutes(Carbon::parse($tupai->terakhir_tidur));
 
-    // Force the calculation result to be an integer
-    $tupai->level_lapar = (int) ($tupai->level_lapar - ($jamSejakMakan * 2));
-    $tupai->level_stamina = (int) ($tupai->level_stamina - ($jamSejakTidur * 3));
+        $perluDisave = false;
 
-    // Keep values within 0-100 range
-    $tupai->level_lapar = max(0, $tupai->level_lapar);
-    $tupai->level_stamina = max(0, $tupai->level_stamina);
+        if ($menitSejakMakan >= 1) {
+            $pengurangLapar = $menitSejakMakan * 5;
+            $tupai->level_lapar = max(0, (int) ($tupai->level_lapar - $pengurangLapar));
+            $tupai->terakhir_makan = $sekarang;
+            $perluDisave = true;
+        }
 
-    // Logic for status
-    if ($tupai->level_lapar < 30) {
-        $tupai->status = 'hungry';
-    } elseif ($tupai->level_stamina < 30) {
-        $tupai->status = 'exhausted';
-    } else {
-        $tupai->status = 'normal';
+        if ($menitSejakTidur >= 1) {
+            $pengurangStamina = $menitSejakTidur * 5;
+            $tupai->level_stamina = max(0, (int) ($tupai->level_stamina - $pengurangStamina));
+            $tupai->terakhir_tidur = $sekarang;
+            $perluDisave = true;
+        }
+
+        if ($tupai->level_lapar < 30) {
+            $tupai->status = 'hungry';
+        } elseif ($tupai->level_stamina < 30) {
+            $tupai->status = 'exhausted';
+        } else {
+            $tupai->status = 'normal';
+        }
+
+        if ($perluDisave) {
+            $tupai->save();
+        }
+
+        return $tupai;
     }
-
-    $tupai->save();
-
-    return $tupai;
-}
 
     public function feed($id)
     {
         $tupai = MyTupai::find($id);
+
         if (! $tupai) {
             return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
+        }
+
+        $hargaMakanan = 10;
+        $dompet = EasyKoin::where('users_id', $tupai->users_id)->first();
+
+        if (!$dompet || $dompet->total_koin < $hargaMakanan) {
+            return response()->json(['success' => false, 'message' => 'Koin tidak cukup! Butuh 10 Koin untuk beli makanan.'], 400);
         }
 
         $tupai = $this->hitungStatusTerkini($tupai);
@@ -143,7 +161,7 @@ class MyTupaiController extends Controller
                 $tupai->users_id,
                 $tupai->level * 20,
                 'level_up',
-                'Bonus naik level Tupai ke level '.$tupai->level
+                'Bonus naik level Tupai ke level ' . $tupai->level
             );
         }
 
@@ -163,6 +181,10 @@ class MyTupaiController extends Controller
             'energi_setelah' => $tupai->level_stamina,
             'notes' => 'Tupai diberi makan, nyam nyam!',
         ]);
+
+        $dompet->total_koin -= $hargaMakanan;
+        $dompet->total_pakai += $hargaMakanan;
+        $dompet->save();
 
         return response()->json(['success' => true, 'message' => 'Tupai berhasil diberi makan!', 'data' => $tupai], 200);
     }
@@ -224,15 +246,15 @@ class MyTupaiController extends Controller
     }
 
     public function checkMyTupai($userId)
-{
-    $tupai = MyTupai::where('users_id', $userId)->first();
-    if (!$tupai) {
-        return response()->json(['success' => false, 'message' => 'Belum ada tupai'], 404);
+    {
+        $tupai = MyTupai::where('users_id', $userId)->first();
+        if (!$tupai) {
+            return response()->json(['success' => false, 'message' => 'Belum ada tupai'], 404);
+        }
+        // Hitung status terbaru sebelum dikirim ke frontend
+        $tupai = $this->hitungStatusTerkini($tupai);
+        return response()->json(['success' => true, 'data' => $tupai]);
     }
-    // Hitung status terbaru sebelum dikirim ke frontend
-    $tupai = $this->hitungStatusTerkini($tupai);
-    return response()->json(['success' => true, 'data' => $tupai]);
-}
 
     /**
      * Update the specified resource in storage.

@@ -17,11 +17,17 @@ class KosController extends Controller
     {
         //
         $query = Kos::query();
+
         if ($request->has('owner_id')) {
             $query->where('users_id', $request->input('owner_id'));
         }
+
         $kos = $query->get();
-        return response()->json(['success' => true, 'data' => $kos], 200);
+
+        return response()->json([
+            'success' => true,
+            'data' => $kos
+        ], 200);
     }
 
     /**
