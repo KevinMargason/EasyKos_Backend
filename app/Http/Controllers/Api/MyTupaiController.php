@@ -11,16 +11,25 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class MyTupaiController extends Controller
 {
+    private const DECAY_PER_MINUTE = 5;
+
+    private const ACTION_THRESHOLD = 70;
+
+    private const SLEEP_DURATION_HOURS = 8;
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         //
-        $tupai = MyTupai::with('user')->get();
+        $tupai = MyTupai::with('user')->get()->map(function (MyTupai $item) {
+            return $this->hitungStatusTerkini($item);
+        });
 
         return response()->json(['success' => true, 'data' => $tupai], 200);
     }
@@ -84,43 +93,79 @@ class MyTupaiController extends Controller
                 return response()->json(['success' => false, 'message' => 'Tupai tidak ditemukan'], 404);
             }
 
+            $tupai = $this->hitungStatusTerkini($tupai);
+
             return response()->json(['success' => true, 'data' => $tupai], 200);
         } catch (\Throwable $e) {
             return $this->handleDbError($e);
         }
     }
 
+    private function applyDecay(MyTupai $tupai, string $valueField, string $timeField, Carbon $now): bool
+    {
+        $lastAction = $tupai->{$timeField} ? Carbon::parse($tupai->{$timeField}) : null;
+
+        if (! $lastAction) {
+            return false;
+        }
+
+        $minutesPassed = $lastAction->diffInMinutes($now);
+
+        if ($minutesPassed <= 0) {
+            return false;
+        }
+
+        $decayAmount = $minutesPassed * self::DECAY_PER_MINUTE;
+        $tupai->{$valueField} = max(0, (int) $tupai->{$valueField} - $decayAmount);
+        $tupai->{$timeField} = $now;
+
+        return true;
+    }
+
+    private function isSleeping(MyTupai $tupai): bool
+    {
+        if ($tupai->status !== 'sleeping') {
+            return false;
+        }
+
+        if (! $tupai->tidur_sampai) {
+            return true;
+        }
+
+        return Carbon::parse($tupai->tidur_sampai)->greaterThan(Carbon::now());
+    }
+
     private function hitungStatusTerkini($tupai)
     {
         $sekarang = Carbon::now();
 
-        $detikSejakMakan = $sekarang->diffInSeconds(Carbon::parse($tupai->terakhir_makan));
-        $detikSejakTidur = $sekarang->diffInSeconds(Carbon::parse($tupai->terakhir_tidur));
-
         $perluDisave = false;
 
-        // Kurangi lapar setiap 60 detik (1 menit) sebesar 5 poin
-        $pengurangLapar = floor($detikSejakMakan / 60) * 5;
-        if ($pengurangLapar > 0) {
-            $tupai->level_lapar = max(0, (int) ($tupai->level_lapar - $pengurangLapar));
-            $tupai->terakhir_makan = $sekarang;
-            $perluDisave = true;
-        }
+        $sleeping = $this->isSleeping($tupai);
+        $sleepUntil = $tupai->tidur_sampai ? Carbon::parse($tupai->tidur_sampai) : null;
 
-        // Kurangi stamina setiap 60 detik (1 menit) sebesar 5 poin
-        $pengurangStamina = floor($detikSejakTidur / 60) * 5;
-        if ($pengurangStamina > 0) {
-            $tupai->level_stamina = max(0, (int) ($tupai->level_stamina - $pengurangStamina));
-            $tupai->terakhir_tidur = $sekarang;
-            $perluDisave = true;
-        }
-
-        if ($tupai->level_lapar < 30) {
-            $tupai->status = 'hungry';
-        } elseif ($tupai->level_stamina < 30) {
-            $tupai->status = 'exhausted';
+        if ($sleeping) {
+            $perluDisave = $this->applyDecay($tupai, 'level_lapar', 'terakhir_makan', $sekarang) || $perluDisave;
+            $tupai->level_stamina = 100;
+            $tupai->status = 'sleeping';
         } else {
-            $tupai->status = 'normal';
+            if ($tupai->status === 'sleeping' && $sleepUntil && $sleepUntil->lessThanOrEqualTo($sekarang)) {
+                $tupai->status = 'normal';
+                $tupai->terakhir_tidur = $sleepUntil;
+                $tupai->level_stamina = 100;
+                $perluDisave = true;
+            }
+
+            $perluDisave = $this->applyDecay($tupai, 'level_lapar', 'terakhir_makan', $sekarang) || $perluDisave;
+            $perluDisave = $this->applyDecay($tupai, 'level_stamina', 'terakhir_tidur', $sekarang) || $perluDisave;
+
+            if ($tupai->level_lapar < 30) {
+                $tupai->status = 'hungry';
+            } elseif ($tupai->level_stamina < 30) {
+                $tupai->status = 'exhausted';
+            } else {
+                $tupai->status = 'normal';
+            }
         }
 
         if ($perluDisave) {
@@ -140,16 +185,20 @@ class MyTupaiController extends Controller
             }
 
             $hargaMakanan = 10;
-            $dompet = EasyKoin::where('users_id', $tupai->users_id)->first();
+            $dompet = null;
 
-            if (! $dompet || $dompet->total_koin < $hargaMakanan) {
-                return response()->json(['success' => false, 'message' => 'Koin tidak cukup! Butuh 10 Koin untuk beli makanan.'], 400);
+            if (Schema::hasTable('dompet_koin')) {
+                $dompet = EasyKoin::where('users_id', $tupai->users_id)->first();
+
+                if (! $dompet || $dompet->total_koin < $hargaMakanan) {
+                    return response()->json(['success' => false, 'message' => 'Koin tidak cukup! Butuh 10 Koin untuk beli makanan.'], 400);
+                }
             }
 
             $tupai = $this->hitungStatusTerkini($tupai);
 
-            if ($tupai->level_lapar >= 100) {
-                return response()->json(['success' => false, 'message' => 'Tupai masih sangat kenyang!'], 400);
+            if ($tupai->level_lapar >= self::ACTION_THRESHOLD) {
+                return response()->json(['success' => false, 'message' => 'Tupai masih kenyang, belum perlu makan.'], 400);
             }
 
             $laparSebelum = $tupai->level_lapar;
@@ -188,9 +237,11 @@ class MyTupaiController extends Controller
                 'notes' => 'Tupai diberi makan, nyam nyam!',
             ]);
 
-            $dompet->total_koin -= $hargaMakanan;
-            $dompet->total_pakai += $hargaMakanan;
-            $dompet->save();
+            if ($dompet) {
+                $dompet->total_koin -= $hargaMakanan;
+                $dompet->total_pakai += $hargaMakanan;
+                $dompet->save();
+            }
 
             return response()->json(['success' => true, 'message' => 'Tupai berhasil diberi makan!', 'data' => $tupai], 200);
         } catch (\Throwable $e) {
@@ -208,15 +259,19 @@ class MyTupaiController extends Controller
 
             $tupai = $this->hitungStatusTerkini($tupai);
 
-            if ($tupai->status === 'sleeping') {
+            if ($tupai->status === 'sleeping' && $this->isSleeping($tupai)) {
                 return response()->json(['success' => false, 'message' => 'Tupai lagi tidur!'], 400);
+            }
+
+            if ($tupai->level_stamina >= self::ACTION_THRESHOLD) {
+                return response()->json(['success' => false, 'message' => 'Tupai masih segar, belum perlu tidur.'], 400);
             }
 
             $energiSebelum = $tupai->level_stamina;
             $tupai->level_stamina = 100;
             $tupai->status = 'sleeping';
             $tupai->terakhir_tidur = Carbon::now();
-            $tupai->tidur_sampai = Carbon::now()->addHours(8);
+            $tupai->tidur_sampai = Carbon::now()->addHours(self::SLEEP_DURATION_HOURS);
             $tupai->save();
 
             $this->updateMissionProgress($tupai->users_id, 'sleep');
@@ -251,6 +306,10 @@ class MyTupaiController extends Controller
 
     private function updateMissionProgress($userId, $jenisMisi)
     {
+        if (! Schema::hasTable('misi_user') || ! Schema::hasTable('misi')) {
+            return;
+        }
+
         $misiUser = UMisi::where('users_id', $userId)
             ->where('status', 'in_progress')
             ->whereHas('mission', function ($query) use ($jenisMisi) {
