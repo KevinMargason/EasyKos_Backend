@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\EasyKoin;
-use App\Models\EasyKoinKoin;
 use App\Models\TransaksiKoin;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CoinController extends Controller
 {
@@ -21,15 +20,18 @@ class CoinController extends Controller
             'success' => true,
             'message' => 'Berhasil mengambil data koin',
             'data' => [
-                'total_koin' => $totalKoin
-            ]
+                'total_koin' => $totalKoin,
+            ],
         ], 200);
     }
 
     public static function updateCoin($userId, $jumlah, $asal, $deskripsi, $direction = 'credit', $refId = 0)
     {
         return DB::transaction(function () use ($userId, $jumlah, $asal, $deskripsi, $direction, $refId) {
-            $wallet = EasyKoin::firstOrCreate(['users_id' => $userId]);
+            $wallet = EasyKoin::firstOrCreate(
+                ['users_id' => $userId],
+                ['total_koin' => 0, 'total_dapat' => 0, 'total_pakai' => 0]
+            );
 
             $koinSebelum = $wallet->total_koin;
 
@@ -37,7 +39,9 @@ class CoinController extends Controller
                 $wallet->total_koin += $jumlah;
                 $wallet->total_dapat += $jumlah;
             } else {
-                if ($wallet->total_koin < $jumlah) return false;
+                if ($wallet->total_koin < $jumlah) {
+                    return false;
+                }
                 $wallet->total_koin -= $jumlah;
                 $wallet->total_pakai += $jumlah;
             }
@@ -52,12 +56,13 @@ class CoinController extends Controller
                 'jumlah' => $jumlah,
                 'koin_sebelum' => $koinSebelum,
                 'koin_setelah' => $wallet->total_koin,
-                'deskripsi' => $deskripsi
+                'deskripsi' => $deskripsi,
             ]);
 
             return true;
         });
     }
+
     /**
      * Display a listing of the resource.
      */
