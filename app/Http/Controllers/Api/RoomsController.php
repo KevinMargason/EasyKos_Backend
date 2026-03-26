@@ -94,9 +94,14 @@ class RoomsController extends Controller
                 }
 
                 $createdRooms[] = Rooms::create($data);
-                return response()->json(['success' => true, 'message' => 'Kamar berhasil dibuat', 'data' => $createdRooms], 201);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
+                    'data' => $createdRooms,
+                ], 201);
             }
-        }catch (\Throwable $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat kamar: '.$e->getMessage(),
