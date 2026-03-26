@@ -74,38 +74,34 @@ class RoomsController extends Controller
         }
 
         // 3. JURUS CLONE KAMAR (Looping)
-        try {
-            $jumlahKamar = $request->jumlah_kamar_loop;
-            $createdRooms = [];
+        
+        $jumlahKamar = $request->jumlah_kamar_loop;
+        $createdRooms = [];
 
-            for ($i = 1; $i <= $jumlahKamar; $i++) {
-                $data = $baseData;
+        for ($i = 1; $i <= $jumlahKamar; $i++) {
+            $data = $baseData;
 
-                // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
-                $data['nomor_kamar'] = 'Kamar '.str_pad($i, 2, '0', STR_PAD_LEFT);
+            // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
+            $data['nomor_kamar'] = 'Kamar '.str_pad($i, 2, '0', STR_PAD_LEFT);
 
-                /**
-                 * LOGIKA BARU:
-                 * Jika ini BUKAN kamar pertama ($i > 1), maka kita set users_id menjadi null.
-                 * Kamar pertama ($i == 1) tetap menggunakan users_id dari request.
-                 */
-                if ($i > 1) {
-                    $data['users_id'] = null;
-                }
-
-                $createdRooms[] = Rooms::create($data);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
-                    'data' => $createdRooms,
-                ], 201);
+            /**
+             * LOGIKA BARU:
+             * Jika ini BUKAN kamar pertama ($i > 1), maka kita set users_id menjadi null.
+             * Kamar pertama ($i == 1) tetap menggunakan users_id dari request.
+             */
+            if ($i > 1) {
+                $data['users_id'] = null;
             }
-        } catch (\Throwable $e) {
+
+            $createdRooms[] = Rooms::create($data);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Gagal membuat kamar: '.$e->getMessage(),
-            ], 500);
+                'success' => true,
+                'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
+                'data' => $createdRooms,
+            ], 201);
+    
+        
         }
     }
 
