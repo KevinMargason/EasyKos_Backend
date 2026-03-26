@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Validator;
 
 class RoomsController extends Controller
 {
+    private function resolveOwnerId(Request $request): int|string|null
+    {
+        return $request->user()?->id ?? $request->input('users_id') ?? $request->input('owner_id');
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -25,7 +30,14 @@ class RoomsController extends Controller
     public function store(Request $request)
     {
         //
-        $validator = Validator::make($request->all(), [
+        $payload = $request->all();
+        $ownerId = $this->resolveOwnerId($request);
+
+        if ($ownerId !== null && $ownerId !== '') {
+            $payload['users_id'] = $ownerId;
+        }
+
+        $validator = Validator::make($payload, [
             'kos_id'            => 'required',
             'harga'             => 'required',
             'jumlah_kamar_loop' => 'required', // Kita longgarkan sedikit biar nggak error kena FormData
@@ -42,7 +54,8 @@ class RoomsController extends Controller
             ], 422); // Memaksa return JSON error 422
         }
 
-        $baseData = $request->except(['foto', 'jumlah_kamar_loop']);
+        $baseData = $validator->validated();
+        unset($baseData['jumlah_kamar_loop']);
 
         // 1. Amankan Fasilitas
         if ($request->has('fasilitas_kamar')) {

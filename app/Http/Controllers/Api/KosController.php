@@ -4,46 +4,72 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kos;
-use App\Models\User;
+use App\Models\Rooms;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class KosController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    private function resolveOwnerId(Request $request): int|string|null
     {
-        //
-        $query = Kos::query();
-        if ($request->has('owner_id')) {
-            $query->where('users_id', $request->input('owner_id'));
-        }
-        $kos = $query->get();
-        return response()->json(['success' => true, 'data' => $kos], 200);
+        return $request->user()?->id
+            ?? $request->query('users_id')
+            ?? $request->query('owner_id')
+            ?? $request->input('users_id')
+            ?? $request->input('owner_id');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    // 1. TAMPILKAN KOS (Sudah ada isolasi Tenant!)
+    public function index(Request $request)
+    {
+        $query = Kos::with('owner');
+
+        // 🔥 INI YANG BIKIN KOS TERISOLASI PER OWNER:
+        $ownerId = $request->query('users_id', $request->query('owner_id'));
+        if ($ownerId !== null && $ownerId !== '') {
+            $query->where('users_id', $ownerId);
+        }
+
+        $kos = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $kos,
+        ], 200);
+    }
+
+    // 2. TAMBAH KOS BARU
     public function store(Request $request)
     {
-        //
-        $request->validate([
-            'nama'            => 'required|string|max:255',
-            'alamat'          => 'required|string',
-            'jumlah_kamar'    => 'required|integer',
-            'gender'          => 'required|string',
-            'rating'          => 'nullable|numeric',
+        $payload = $request->all();
+        $ownerId = $request->user()?->id ?? $request->input('users_id') ?? $request->input('owner_id');
+
+        if ($ownerId !== null && $ownerId !== '') {
+            $payload['users_id'] = $ownerId;
+        }
+
+        $validator = Validator::make($payload, [
+            'nama' => 'required|string|max:255',
+            'alamat' => 'required|string',
+            'jumlah_kamar' => 'required|integer',
+            'gender' => 'required|string',
+            'rating' => 'nullable|numeric',
             'region_idregion' => 'required|integer',
-            'peraturan'       => 'nullable|string',
-            'fasilitas_umum'  => 'nullable|array',
+            'peraturan' => 'nullable|string',
+            'fasilitas_umum' => 'nullable|array',
+            'users_id' => 'required|integer',
         ]);
 
-        $data = $request->all();
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal!',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        $data['users_id'] = $request->user() ? $request->user()->id : $request->input('owner_id');
+        $data = $validator->validated();
+        $data['users_id'] = (int) $ownerId;
 
         if ($request->has('fasilitas_umum')) {
             $data['fasilitas_umum'] = json_encode($request->input('fasilitas_umum'));
@@ -54,104 +80,153 @@ class KosController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Kos berhasil ditambahkan',
-            'data' => $kos
+            'data' => $kos,
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    // 3. LIHAT DETAIL 1 KOS
+    public function show($id)
     {
-        //
-        $kos = Kos::with(['aturans', 'fasilitas', 'owner'])->find($id);
-        if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        $kos = Kos::with('owner')->find($id);
+        if (! $kos) {
+            return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        }
 
         return response()->json(['success' => true, 'data' => $kos], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    // 4. EDIT KOS (Ini yang bikin error <!DOCTYPE tadi)
+    public function update(Request $request, $id)
     {
-        //
         $kos = Kos::find($id);
-        if (!$kos) return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
-
-        $kos->update($request->all());
-        return response()->json(['success' => true, 'message' => 'Kos berhasil diupdate', 'data' => $kos], 200);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-        $kos = Kos::find($id);
-        if (!$kos) {
+        if (! $kos) {
             return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
         }
 
-        // JURUS SAPU BERSIH: Hapus semua kamar yang nempel di Kos ini dulu
-        \App\Models\Rooms::where('kos_id', $id)->delete();
+        $payload = $request->all();
+        $ownerId = $request->user()?->id ?? $request->input('users_id') ?? $request->input('owner_id');
 
-        // Setelah kamarnya rata dengan tanah, baru eksekusi induknya (Kos)
+        if ($ownerId !== null && $ownerId !== '') {
+            $payload['users_id'] = $ownerId;
+        }
+
+        $validator = Validator::make($payload, [
+            'nama' => 'sometimes|string|max:255',
+            'alamat' => 'sometimes|string',
+            'jumlah_kamar' => 'sometimes|integer',
+            'gender' => 'sometimes|string',
+            'rating' => 'nullable|numeric',
+            'region_idregion' => 'sometimes|integer',
+            'peraturan' => 'nullable|string',
+            'fasilitas_umum' => 'nullable|array',
+            'users_id' => 'sometimes|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal!',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        // Handle array fasilitas
+        if ($request->has('fasilitas_umum')) {
+            $data['fasilitas_umum'] = is_array($request->fasilitas_umum)
+                ? json_encode($request->fasilitas_umum)
+                : $request->fasilitas_umum;
+        }
+
+        $kos->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kos berhasil diperbarui!',
+            'data' => $kos,
+        ], 200);
+    }
+
+    // 5. HAPUS KOS (Ini juga yang bikin error <!DOCTYPE)
+    public function destroy($id)
+    {
+        $kos = Kos::find($id);
+        if (! $kos) {
+            return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
+        }
+
         $kos->delete();
 
-        return response()->json(['success' => true, 'message' => 'Kos beserta seluruh kamarnya berhasil dibumihanguskan!'], 200);
+        return response()->json([
+            'success' => true,
+            'message' => 'Kos berhasil dihapus!',
+        ], 200);
     }
 
     public function currentKos(Request $request)
     {
-        $user = $request->user();
+        $ownerId = $this->resolveOwnerId($request);
+        $query = Kos::with('owner');
 
-        $room = DB::table('rooms')->where('users_id', $user->id)->first();
+        if ($ownerId !== null && $ownerId !== '') {
+            $query->where('users_id', $ownerId);
+        }
 
-        if (!$room) {
+        $kos = $query->latest('id')->first();
+
+        if (! $kos) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kamu belum menyewa kamar kos apapun.'
+                'message' => 'Kos tidak ditemukan',
             ], 404);
         }
 
-        $kos = DB::table('kos')->where('id', $room->kos_id)->first();
-
         return response()->json([
             'success' => true,
-            'data'    => $kos
+            'data' => $kos,
         ], 200);
     }
 
-    public function allResidents()
+    public function allResidents(Request $request)
     {
-        $residents = DB::table('users')
-            ->select('id', 'name', 'email', 'no_hp', 'role')
-            ->where('role', 'tenant')
-            ->get();
+        $ownerId = $this->resolveOwnerId($request);
+        $query = Rooms::with(['kos', 'user']);
+
+        if ($ownerId !== null && $ownerId !== '') {
+            $query->where('users_id', $ownerId);
+        }
+
+        $residents = $query->get()->map(fn (Rooms $room) => $this->formatResidentRecord($room));
 
         return response()->json([
             'success' => true,
-            'data'    => $residents
+            'data' => $residents,
         ], 200);
     }
 
-    public function kosResidents($kosId)
+    public function kosResidents(Request $request, $kosId)
     {
-        $userIds = DB::table('rooms')
+        $residents = Rooms::with(['kos', 'user'])
             ->where('kos_id', $kosId)
-            ->pluck('users_id');
-
-        // Ambil data profil mereka
-        $residents = DB::table('users')
-            ->select('id', 'name', 'email', 'no_hp', 'role')
-            ->whereIn('id', $userIds)
-            ->get();
+            ->get()
+            ->map(fn (Rooms $room) => $this->formatResidentRecord($room));
 
         return response()->json([
             'success' => true,
-            'data'    => $residents
+            'data' => $residents,
         ], 200);
+    }
+
+    private function formatResidentRecord(Rooms $room): array
+    {
+        return [
+            'periode' => $room->created_at?->format('Y-m') ?? '-',
+            'nomor' => $room->nomor_kamar ?? '-',
+            'nama' => $room->user?->name ?? '-',
+            'tanggalMasuk' => $room->created_at?->format('Y-m-d') ?? '-',
+            'tanggalKeluar' => $room->users_id ? '-' : ($room->updated_at?->format('Y-m-d') ?? '-'),
+            'status' => $room->users_id ? 'AKTIF' : 'KOSONG',
+        ];
     }
 }

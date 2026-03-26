@@ -17,6 +17,9 @@ class MisiController extends Controller
     {
         //
         $userId = $request->query('users_id');
+        if (!$userId && $request->user()) {
+            $userId = $request->user()->id;
+        }
 
         $missions = Misi::where('is_active', 1)->get();
 
@@ -25,6 +28,17 @@ class MisiController extends Controller
                 ->where('users_id', $userId)
                 ->whereDate('tanggal', Carbon::today())
                 ->first();
+
+            if (!$userProgress && $userId) {
+                $userProgress = UMisi::create([
+                    'misi_id' => $misi->id,
+                    'users_id' => $userId,
+                    'tanggal' => Carbon::today(),
+                    'progress_level' => 0,
+                    'status' => 'in_progress'
+                ]);
+            }
+
             $misi->user_status = $userProgress;
         }
 

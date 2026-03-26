@@ -16,7 +16,7 @@ class Kos extends Model
         'foto',
         'rating',
         'region_idregion',
-        'user_id',
+        'users_id',
         'peraturan',
         'fasilitas_umum',
     ];
@@ -38,7 +38,6 @@ class Kos extends Model
 
     public function owner()
     {
-        return $this->hasOneThrough(User::class, Rooms::class, 'kos_id', 'id', 'id', 'users_id')
-            ->where('users.role', 'owner');
+        return $this->belongsTo(User::class, 'users_id', 'id');
     }
 }
