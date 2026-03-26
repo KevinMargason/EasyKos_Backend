@@ -18,7 +18,6 @@ class TupaiHistori extends Model
         'energi_setelah',
         'notes'
     ];
-    public $timestamps = false;
 
     public function tupai()
     {
