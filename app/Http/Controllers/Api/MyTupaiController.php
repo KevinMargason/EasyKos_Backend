@@ -19,8 +19,6 @@ class MyTupaiController extends Controller
 
     private const ACTION_THRESHOLD = 70;
 
-    private const SLEEP_DURATION_HOURS = 8;
-
     /**
      * Display a listing of the resource.
      */
@@ -122,6 +120,33 @@ class MyTupaiController extends Controller
         return true;
     }
 
+    private function applyGain(MyTupai $tupai, string $valueField, string $timeField, Carbon $now, int $target = 100): bool
+    {
+        $lastAction = $tupai->{$timeField} ? Carbon::parse($tupai->{$timeField}) : null;
+
+        if (! $lastAction) {
+            return false;
+        }
+
+        $currentValue = (int) $tupai->{$valueField};
+
+        if ($currentValue >= $target) {
+            return false;
+        }
+
+        $minutesPassed = $lastAction->diffInMinutes($now);
+
+        if ($minutesPassed <= 0) {
+            return false;
+        }
+
+        $gainAmount = $minutesPassed * self::DECAY_PER_MINUTE;
+        $tupai->{$valueField} = min($target, $currentValue + $gainAmount);
+        $tupai->{$timeField} = $now;
+
+        return true;
+    }
+
     private function isSleeping(MyTupai $tupai): bool
     {
         if ($tupai->status !== 'sleeping') {
@@ -146,8 +171,16 @@ class MyTupaiController extends Controller
 
         if ($sleeping) {
             $perluDisave = $this->applyDecay($tupai, 'level_lapar', 'terakhir_makan', $sekarang) || $perluDisave;
-            $tupai->level_stamina = 100;
-            $tupai->status = 'sleeping';
+
+            $perluDisave = $this->applyGain($tupai, 'level_stamina', 'terakhir_tidur', $sekarang) || $perluDisave;
+
+            if ($tupai->level_stamina >= 100 || ($sleepUntil && $sleepUntil->lessThanOrEqualTo($sekarang))) {
+                $tupai->level_stamina = 100;
+                $tupai->status = 'normal';
+                $perluDisave = true;
+            } else {
+                $tupai->status = 'sleeping';
+            }
         } else {
             if ($tupai->status === 'sleeping' && $sleepUntil && $sleepUntil->lessThanOrEqualTo($sekarang)) {
                 $tupai->status = 'normal';
@@ -268,10 +301,12 @@ class MyTupaiController extends Controller
             }
 
             $energiSebelum = $tupai->level_stamina;
-            $tupai->level_stamina = 100;
+            $neededMinutes = (int) ceil((100 - max(0, (int) $tupai->level_stamina)) / self::DECAY_PER_MINUTE);
+            $neededMinutes = max(1, $neededMinutes);
+
             $tupai->status = 'sleeping';
             $tupai->terakhir_tidur = Carbon::now();
-            $tupai->tidur_sampai = Carbon::now()->addHours(self::SLEEP_DURATION_HOURS);
+            $tupai->tidur_sampai = Carbon::now()->addMinutes($neededMinutes);
             $tupai->save();
 
             $this->updateMissionProgress($tupai->users_id, 'sleep');
