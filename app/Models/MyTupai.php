@@ -8,18 +8,7 @@ class MyTupai extends Model
 {
     protected $table = 'myTupai';
 
-    protected $fillable = [
-        'nama',
-        'level',
-        'xp',
-        'level_lapar',
-        'level_stamina',
-        'status',
-        'terakhir_makan',
-        'terakhir_tidur',
-        'tidur_sampai',
-        'users_id'
-    ];
+    protected $guarded = [];
 
     public function user()
     {

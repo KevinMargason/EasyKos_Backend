@@ -56,7 +56,10 @@ class MyTupaiController extends Controller
 
             return response()->json(['success' => true, 'message' => 'Berhasil adopsi!', 'data' => $tupai]);
         } catch (\Throwable $e) {
-            return $this->handleDbError($e);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
