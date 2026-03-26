@@ -32,18 +32,27 @@ class MyTupaiController extends Controller
     {
         try {
             $validated = $request->validate([
-                'users_id' => 'required',
+                'users_id' => 'required|integer|exists:users,id',
                 'nama' => 'required|string|max:255',
             ]);
 
+            $userId = $request->user()?->id ?? $validated['users_id'];
+
+            if (! DB::table('users')->where('id', $userId)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan',
+                ], 404);
+            }
+
             // Cek jika user sudah punya
-            $exists = MyTupai::where('users_id', $validated['users_id'])->first();
+            $exists = MyTupai::where('users_id', $userId)->first();
             if ($exists) {
                 return response()->json(['success' => true, 'data' => $exists]);
             }
 
             $tupai = MyTupai::create([
-                'users_id' => $validated['users_id'],
+                'users_id' => $userId,
                 'nama' => $validated['nama'],
                 'level' => 1,
                 'xp' => 0,
@@ -264,6 +273,10 @@ class MyTupaiController extends Controller
     public function checkMyTupai($userId)
     {
         try {
+            if (! DB::table('users')->where('id', $userId)->exists()) {
+                return response()->json(['success' => false, 'message' => 'User tidak ditemukan'], 404);
+            }
+
             $tupai = MyTupai::where('users_id', $userId)->first();
             if (!$tupai) {
                 return response()->json(['success' => false, 'message' => 'Belum ada tupai'], 404);
