@@ -74,28 +74,31 @@ class RoomsController extends Controller
         }
 
         // 3. JURUS CLONE KAMAR (Looping)
-        $jumlah = (int) $request->jumlah_kamar_loop + 1;
-        $createdRooms = []; // Siapkan wadah untuk response
+        $jumlahKamar = $request->jumlah_kamar_loop;
+        $createdRooms = [];
 
-        for ($i = 0; $i < $jumlah; $i++) {
-            $room = Rooms::create([
-                'kos_id' => $request->kos_id,
-                'harga' => $request->harga,
-                // LOGIKA: user_id cuma buat kamar pertama (index 0)
-                'users_id' => ($i === 0) ? $request->users_id : null,
-                'ukuran_kamar' => $request->ukuran_kamar ?? '3x3',
-                'listrik' => $request->listrik ?? 'token',
-            ]);
+        for ($i = 1; $i <= $jumlahKamar; $i++) {
+            $data = $baseData;
 
-            // Simpan ke array untuk dikirim balik ke Frontend
-            $createdRooms[] = $room;
+            // Bikin nama kamar otomatis: Kamar 01, Kamar 02, dst.
+            $data['nomor_kamar'] = 'Kamar '.str_pad($i, 2, '0', STR_PAD_LEFT);
+
+            /**
+             * LOGIKA BARU:
+             * Jika ini BUKAN kamar pertama ($i > 1), maka kita set users_id menjadi null.
+             * Kamar pertama ($i == 1) tetap menggunakan users_id dari request.
+             */
+            if ($i > 1) {
+                $data['users_id'] = null;
+            }
+
+            $createdRooms[] = Rooms::create($data);
         }
-
-        // KIRIM RESPONSE DI SINI (Di luar loop)
-        return response()->json([
-            'message' => 'Semua kamar berhasil dibuat',
-            'data' => $createdRooms,
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => "$jumlahKamar Kamar & Foto berhasil ditambahkan!",
+                'data' => $createdRooms,
+            ], 201);
     }
 
     /**
