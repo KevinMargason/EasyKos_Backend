@@ -81,10 +81,6 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                // 🔥 FIX 1: Pakai base_path() biar Laravel nggak nyasar nyari file ca.pem
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA') ? base_path(env('MYSQL_ATTR_SSL_CA')) : null,
-
-                // 🔥 FIX 2: Matikan verifikasi ketat sementara
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ]) : [],
         ],
