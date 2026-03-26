@@ -22,7 +22,7 @@ class KosController extends Controller
     // 1. TAMPILKAN KOS (Sudah ada isolasi Tenant!)
     public function index(Request $request)
     {
-        $query = Kos::query();
+        $query = Kos::with('owner');
 
         // 🔥 INI YANG BIKIN KOS TERISOLASI PER OWNER:
         $ownerId = $request->query('users_id', $request->query('owner_id'));
@@ -87,7 +87,7 @@ class KosController extends Controller
     // 3. LIHAT DETAIL 1 KOS
     public function show($id)
     {
-        $kos = Kos::find($id);
+        $kos = Kos::with('owner')->find($id);
         if (! $kos) {
             return response()->json(['success' => false, 'message' => 'Kos tidak ditemukan'], 404);
         }
@@ -167,7 +167,7 @@ class KosController extends Controller
     public function currentKos(Request $request)
     {
         $ownerId = $this->resolveOwnerId($request);
-        $query = Kos::query();
+        $query = Kos::with('owner');
 
         if ($ownerId !== null && $ownerId !== '') {
             $query->where('users_id', $ownerId);
